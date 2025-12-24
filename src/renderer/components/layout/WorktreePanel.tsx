@@ -36,10 +36,12 @@ interface WorktreePanelProps {
   projectName: string;
   isLoading?: boolean;
   isCreating?: boolean;
+  error?: string | null;
   onSelectWorktree: (worktree: GitWorktree) => void;
   onCreateWorktree: (options: WorktreeCreateOptions) => Promise<void>;
   onRemoveWorktree: (worktree: GitWorktree, deleteBranch?: boolean) => Promise<void>;
   onRefresh: () => void;
+  onInitGit?: () => Promise<void>;
   width?: number;
   collapsed?: boolean;
   onCollapse?: () => void;
@@ -54,10 +56,12 @@ export function WorktreePanel({
   projectName,
   isLoading,
   isCreating,
+  error,
   onSelectWorktree,
   onCreateWorktree,
   onRemoveWorktree,
   onRefresh,
+  onInitGit,
   width: _width = 280,
   collapsed: _collapsed = false,
   onCollapse,
@@ -149,7 +153,31 @@ export function WorktreePanel({
 
       {/* Worktree List */}
       <div className="flex-1 overflow-auto p-2">
-        {isLoading ? (
+        {error ? (
+          <Empty className="border-0">
+            <EmptyMedia variant="icon">
+              <GitBranch className="h-4.5 w-4.5" />
+            </EmptyMedia>
+            <EmptyHeader>
+              <EmptyTitle className="text-base">不是 Git 仓库</EmptyTitle>
+              <EmptyDescription>
+                当前目录还不是 Git 仓库，初始化后即可使用 Git 功能
+              </EmptyDescription>
+            </EmptyHeader>
+            <div className="mt-2 flex gap-2">
+              <Button onClick={onRefresh} variant="outline" size="sm">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                刷新
+              </Button>
+              {onInitGit && (
+                <Button onClick={onInitGit} size="sm">
+                  <GitBranch className="mr-2 h-4 w-4" />
+                  初始化仓库
+                </Button>
+              )}
+            </div>
+          </Empty>
+        ) : isLoading ? (
           <div className="space-y-2">
             {[0, 1, 2].map((i) => (
               <WorktreeItemSkeleton key={`skeleton-${i}`} />

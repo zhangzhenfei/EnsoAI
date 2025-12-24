@@ -7,11 +7,12 @@ import { WorkspaceSidebar } from './components/layout/WorkspaceSidebar';
 import { WorktreePanel } from './components/layout/WorktreePanel';
 import { SettingsDialog } from './components/settings/SettingsDialog';
 import { useEditor } from './hooks/useEditor';
-import { useGitBranches } from './hooks/useGit';
+import { useGitBranches, useGitInit } from './hooks/useGit';
 import { useWorktreeCreate, useWorktreeList, useWorktreeRemove } from './hooks/useWorktree';
 import { useNavigationStore } from './stores/navigation';
 import { useSettingsStore } from './stores/settings';
 import { useWorkspaceStore } from './stores/workspace';
+import { useWorktreeStore } from './stores/worktree';
 
 // Animation config
 const panelTransition = { type: 'spring' as const, stiffness: 400, damping: 30 };
@@ -74,6 +75,7 @@ export default function App() {
   const startWidthRef = useRef(0);
 
   const { workspaces, currentWorkspace, setCurrentWorkspace, setWorkspaces } = useWorkspaceStore();
+  const worktreeError = useWorktreeStore((s) => s.error);
 
   // Initialize settings store (for theme hydration)
   useSettingsStore();
@@ -193,6 +195,7 @@ export default function App() {
   // Worktree mutations
   const createWorktreeMutation = useWorktreeCreate();
   const removeWorktreeMutation = useWorktreeRemove();
+  const gitInitMutation = useGitInit();
 
   // Initialize default workspace if none exists
   useEffect(() => {
@@ -357,6 +360,18 @@ export default function App() {
     refetchBranches();
   };
 
+  const handleInitGit = async () => {
+    if (!selectedRepo) return;
+    try {
+      await gitInitMutation.mutateAsync(selectedRepo);
+      // Refresh worktrees and branches after init
+      await refetch();
+      await refetchBranches();
+    } catch (error) {
+      console.error('Failed to initialize git repository:', error);
+    }
+  };
+
   return (
     <div className={`flex h-screen overflow-hidden ${resizing ? 'select-none' : ''}`}>
       {/* Column 1: Workspace Sidebar */}
@@ -407,9 +422,11 @@ export default function App() {
               projectName={selectedRepo?.split('/').pop() || ''}
               isLoading={worktreesLoading}
               isCreating={createWorktreeMutation.isPending}
+              error={worktreeError}
               onSelectWorktree={handleSelectWorktree}
               onCreateWorktree={handleCreateWorktree}
               onRemoveWorktree={handleRemoveWorktree}
+              onInitGit={handleInitGit}
               onRefresh={() => {
                 refetch();
                 refetchBranches();
