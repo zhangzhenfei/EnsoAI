@@ -113,7 +113,10 @@ export function ShellTerminal({
   }, [isActive, handleContextMenu, containerRef]);
 
   return (
-    <div className="relative h-full w-full" style={{ backgroundColor: settings.theme.background }}>
+    <div
+      className="relative h-full w-full"
+      style={{ backgroundColor: settings.theme.background, contain: 'strict' }}
+    >
       <div ref={containerRef} className="h-full w-full px-[5px] py-[2px]" />
       <TerminalSearchBar
         ref={searchBarRef}
