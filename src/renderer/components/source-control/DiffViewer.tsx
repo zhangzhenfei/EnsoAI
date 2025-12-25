@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/empty';
 import { useFileDiff } from '@/hooks/useSourceControl';
 import { getXtermTheme, isTerminalThemeDark } from '@/lib/ghosttyTheme';
+import { matchesKeybinding } from '@/lib/keybinding';
 import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/settings';
 import { useSourceControlStore } from '@/stores/sourceControl';
@@ -278,19 +279,6 @@ export function DiffViewer({
 
   // Keyboard shortcuts for diff navigation
   useEffect(() => {
-    const matchesKeybinding = (
-      e: KeyboardEvent,
-      binding: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; meta?: boolean }
-    ) => {
-      const keyMatch = e.key.toLowerCase() === binding.key.toLowerCase();
-      const ctrlMatch = binding.ctrl !== undefined ? e.ctrlKey === binding.ctrl : !e.ctrlKey;
-      const altMatch = binding.alt !== undefined ? e.altKey === binding.alt : !e.altKey;
-      const shiftMatch = binding.shift !== undefined ? e.shiftKey === binding.shift : !e.shiftKey;
-      const metaMatch = binding.meta !== undefined ? e.metaKey === binding.meta : !e.metaKey;
-
-      return keyMatch && ctrlMatch && altMatch && shiftMatch && metaMatch;
-    };
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!file) return;
 

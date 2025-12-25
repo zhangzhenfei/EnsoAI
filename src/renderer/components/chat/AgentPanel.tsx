@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { matchesKeybinding } from '@/lib/keybinding';
 import { BUILTIN_AGENT_IDS, useSettingsStore } from '@/stores/settings';
 import { AgentTerminal } from './AgentTerminal';
 import { type Session, SessionBar } from './SessionBar';
@@ -278,23 +279,6 @@ export function AgentPanel({ repoPath, cwd, isActive = false }: AgentPanelProps)
     [cwd, customAgents]
   );
 
-  // Check if a keyboard event matches a keybinding
-  const matchesKeybinding = useCallback(
-    (
-      e: KeyboardEvent,
-      binding: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; meta?: boolean }
-    ) => {
-      const keyMatch = e.key.toLowerCase() === binding.key.toLowerCase();
-      const ctrlMatch = binding.ctrl !== undefined ? e.ctrlKey === binding.ctrl : true;
-      const altMatch = binding.alt !== undefined ? e.altKey === binding.alt : true;
-      const shiftMatch = binding.shift !== undefined ? e.shiftKey === binding.shift : true;
-      const metaMatch = binding.meta !== undefined ? e.metaKey === binding.meta : true;
-
-      return keyMatch && ctrlMatch && altMatch && shiftMatch && metaMatch;
-    },
-    []
-  );
-
   // Agent session keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -347,7 +331,6 @@ export function AgentPanel({ repoPath, cwd, isActive = false }: AgentPanelProps)
     isActive,
     activeSessionId,
     agentKeybindings,
-    matchesKeybinding,
     handleNewSession,
     handleCloseSession,
     handleNextSession,

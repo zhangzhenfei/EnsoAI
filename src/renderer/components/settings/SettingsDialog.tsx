@@ -42,6 +42,7 @@ import {
   getXtermTheme,
   type XtermTheme,
 } from '@/lib/ghosttyTheme';
+import { codeToKey } from '@/lib/keybinding';
 import { cn } from '@/lib/utils';
 import {
   type FontWeight,
@@ -768,9 +769,12 @@ function KeybindingInput({
     // Ignore modifier-only keys
     if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return;
 
+    // Use e.code to get the physical key (avoids Option key special chars on macOS)
+    const key = codeToKey(e.code) || e.key.toLowerCase();
+
     // Record exactly what the user pressed
     const newBinding: TerminalKeybinding = {
-      key: e.key.toLowerCase(),
+      key,
     };
 
     // Only set modifier keys if they are actually pressed

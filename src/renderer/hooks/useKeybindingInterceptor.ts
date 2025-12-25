@@ -1,16 +1,8 @@
 import { useEffect } from 'react';
-import { type TerminalKeybinding, useSettingsStore } from '@/stores/settings';
+import { matchesKeybinding } from '@/lib/keybinding';
+import { useSettingsStore } from '@/stores/settings';
 
 type KeybindingType = 'closeTab' | 'newTab' | 'nextTab' | 'prevTab' | 'clear';
-
-function matchesKeybinding(e: KeyboardEvent, binding: TerminalKeybinding): boolean {
-  const keyMatch = e.key.toLowerCase() === binding.key.toLowerCase();
-  const ctrlMatch = binding.ctrl ? e.ctrlKey : !e.ctrlKey;
-  const altMatch = binding.alt ? e.altKey : !e.altKey;
-  const shiftMatch = binding.shift ? e.shiftKey : !e.shiftKey;
-  const metaMatch = binding.meta ? e.metaKey : !e.metaKey;
-  return keyMatch && ctrlMatch && altMatch && shiftMatch && metaMatch;
-}
 
 /**
  * Intercept terminal keybindings when a condition is met.

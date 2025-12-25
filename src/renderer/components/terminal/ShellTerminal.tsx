@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useXterm } from '@/hooks/useXterm';
+import { matchesKeybinding } from '@/lib/keybinding';
 import { useSettingsStore } from '@/stores/settings';
 import { TerminalSearchBar, type TerminalSearchBarRef } from './TerminalSearchBar';
 
@@ -35,23 +36,6 @@ export function ShellTerminal({
   const searchBarRef = useRef<TerminalSearchBarRef>(null);
   const terminalKeybindings = useSettingsStore((state) => state.terminalKeybindings);
 
-  // Check if a keyboard event matches a keybinding
-  const matchesKeybinding = useCallback(
-    (
-      e: KeyboardEvent,
-      binding: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; meta?: boolean }
-    ) => {
-      const keyMatch = e.key.toLowerCase() === binding.key.toLowerCase();
-      const ctrlMatch = binding.ctrl !== undefined ? e.ctrlKey === binding.ctrl : true;
-      const altMatch = binding.alt !== undefined ? e.altKey === binding.alt : true;
-      const shiftMatch = binding.shift !== undefined ? e.shiftKey === binding.shift : true;
-      const metaMatch = binding.meta !== undefined ? e.metaKey === binding.meta : true;
-
-      return keyMatch && ctrlMatch && altMatch && shiftMatch && metaMatch;
-    },
-    []
-  );
-
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -73,7 +57,7 @@ export function ShellTerminal({
         return;
       }
     },
-    [isSearchOpen, terminalKeybindings, matchesKeybinding, clear]
+    [isSearchOpen, terminalKeybindings, clear]
   );
 
   // Handle right-click context menu
