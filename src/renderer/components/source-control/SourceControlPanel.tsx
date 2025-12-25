@@ -209,7 +209,7 @@ export function SourceControlPanel({
         title: confirmAction.type === 'discard' ? '放弃更改失败' : '删除文件失败',
         description: error instanceof Error ? error.message : '未知错误',
         type: 'error',
-        duration: 5000,
+        timeout: 5000,
       });
     }
 
@@ -247,7 +247,7 @@ export function SourceControlPanel({
           title: '提交成功',
           description: `已提交 ${staged.length} 个文件`,
           type: 'success',
-          duration: 3000,
+          timeout: 3000,
         });
         setSelectedFile(null);
       } catch (error) {
@@ -255,7 +255,7 @@ export function SourceControlPanel({
           title: '提交失败',
           description: error instanceof Error ? error.message : '未知错误',
           type: 'error',
-          duration: 5000,
+          timeout: 5000,
         });
       }
     },

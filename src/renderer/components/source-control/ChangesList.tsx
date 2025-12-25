@@ -163,20 +163,11 @@ export function ChangesList({
           <button
             type="button"
             className="flex h-7 items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            onClick={() => setViewMode(viewMode === 'list' ? 'tree' : 'list')}
-            title={viewMode === 'list' ? '切换到树形视图' : '切换到列表视图'}
+            onClick={() => setViewMode('list')}
+            title="切换到列表视图"
           >
-            {viewMode === 'list' ? (
-              <>
-                <TreeDeciduous className="h-3.5 w-3.5" />
-                <span>树形视图</span>
-              </>
-            ) : (
-              <>
-                <List className="h-3.5 w-3.5" />
-                <span>列表视图</span>
-              </>
-            )}
+            <List className="h-3.5 w-3.5" />
+            <span>列表视图</span>
           </button>
         </div>
         {/* Tree View */}

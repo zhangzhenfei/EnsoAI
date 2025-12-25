@@ -280,6 +280,18 @@ export class GitService {
     return files;
   }
 
+  async checkIgnored(paths: string[]): Promise<Set<string>> {
+    if (paths.length === 0) return new Set();
+    try {
+      // git check-ignore 返回被忽略的文件列表
+      const result = await this.git.checkIgnore(paths);
+      return new Set(result);
+    } catch {
+      // 没有被忽略的文件时会抛出错误（exit code 1）
+      return new Set();
+    }
+  }
+
   async getCommitDiff(
     hash: string,
     filePath: string,
