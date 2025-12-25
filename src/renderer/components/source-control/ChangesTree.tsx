@@ -117,6 +117,7 @@ function FileTreeNode({
   actionTitle,
   onDiscard,
 }: FileTreeNodeProps) {
+  const { t } = useI18n();
   const { expandedFolders, toggleFolder } = useSourceControlStore();
   const isExpanded = expandedFolders.has(node.path);
 

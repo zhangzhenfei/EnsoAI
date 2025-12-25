@@ -94,6 +94,7 @@ export function CommitHistoryList({
                 isSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
               )}
               onClick={() => onCommitClick(commit.hash)}
+              title={commit.message}
             >
               {/* Message & Metadata */}
               <div className="min-w-0 flex-1">

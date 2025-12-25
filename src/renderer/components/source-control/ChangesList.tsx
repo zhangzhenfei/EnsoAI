@@ -79,6 +79,7 @@ function FileItem({
       onKeyDown={(e) => e.key === 'Enter' && onFileClick()}
       role="button"
       tabIndex={0}
+      title={file.path}
     >
       <Icon className={cn('h-4 w-4 shrink-0', isSelected ? '' : statusColors[file.status])} />
 

@@ -1,7 +1,6 @@
 import type { CommitFileChange } from '@shared/types';
-import { ChevronRight, FileEdit, FilePlus, FileX, Loader2 } from 'lucide-react';
+import { FileEdit, FilePlus, FileX, Loader2, PanelLeftClose } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { TFunction } from '@/i18n';
 import { useI18n } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +10,7 @@ interface CommitFileListProps {
   onFileClick: (path: string) => void;
   isLoading?: boolean;
   commitHash?: string;
+  onCollapse?: () => void;
 }
 
 function getFileIcon(status: CommitFileChange['status']) {
@@ -24,25 +24,6 @@ function getFileIcon(status: CommitFileChange['status']) {
   }
 }
 
-function getStatusText(status: CommitFileChange['status'], t: TFunction) {
-  switch (status) {
-    case 'A':
-      return t('Added');
-    case 'D':
-      return t('Deleted');
-    case 'M':
-      return t('Modified');
-    case 'R':
-      return t('Renamed');
-    case 'C':
-      return t('Copied');
-    case 'X':
-      return t('Conflict');
-    default:
-      return '';
-  }
-}
-
 function getStatusColor(status: CommitFileChange['status']) {
   switch (status) {
     case 'A':
@@ -50,12 +31,12 @@ function getStatusColor(status: CommitFileChange['status']) {
     case 'D':
       return 'text-red-500';
     case 'M':
-      return 'text-yellow-500';
+      return 'text-orange-500';
     case 'R':
     case 'C':
       return 'text-blue-500';
     case 'X':
-      return 'text-orange-500';
+      return 'text-purple-500';
     default:
       return 'text-muted-foreground';
   }
@@ -67,6 +48,7 @@ export function CommitFileList({
   onFileClick,
   isLoading = false,
   commitHash,
+  onCollapse,
 }: CommitFileListProps) {
   const { t } = useI18n();
 
@@ -88,18 +70,28 @@ export function CommitFileList({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="shrink-0 border-b px-4 py-2">
-        <h3 className="text-sm font-medium">
-          {t('Changed files ({{count}})', { count: files.length })}
-        </h3>
-        {commitHash && (
-          <p className="mt-1 text-xs text-muted-foreground font-mono">
-            {commitHash.substring(0, 7)}
-          </p>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-sm font-medium">
+            {t('Changed files ({{count}})', { count: files.length })}
+          </h3>
+          {commitHash && (
+            <p className="text-xs text-muted-foreground font-mono">{commitHash.substring(0, 7)}</p>
+          )}
+        </div>
+        {onCollapse && (
+          <button
+            type="button"
+            onClick={onCollapse}
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 hover:text-foreground transition-colors"
+            title={t('Hide changed files')}
+          >
+            <PanelLeftClose className="h-3.5 w-3.5" />
+          </button>
         )}
       </div>
       <ScrollArea className="flex-1">
-        <div className="p-2">
+        <div className="space-y-0.5 px-1 py-2">
           {files.map((file) => {
             const Icon = getFileIcon(file.status);
             const isSelected = selectedFile === file.path;
@@ -108,17 +100,24 @@ export function CommitFileList({
                 type="button"
                 key={file.path}
                 className={cn(
-                  'group flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left transition-colors',
+                  'flex h-7 w-full items-center gap-2 rounded-sm px-2 text-sm text-left transition-colors',
                   isSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
                 )}
                 onClick={() => onFileClick(file.path)}
+                title={file.path}
               >
-                <Icon className={cn('h-4 w-4 shrink-0', getStatusColor(file.status))} />
-                <span className="min-w-0 flex-1 truncate text-sm">{file.path}</span>
-                <span className={cn('shrink-0 text-xs', getStatusColor(file.status))}>
-                  {getStatusText(file.status, t)}
+                <Icon
+                  className={cn('h-4 w-4 shrink-0', isSelected ? '' : getStatusColor(file.status))}
+                />
+                <span
+                  className={cn(
+                    'shrink-0 font-mono text-xs',
+                    isSelected ? '' : getStatusColor(file.status)
+                  )}
+                >
+                  {file.status}
                 </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                <span className="min-w-0 flex-1 truncate">{file.path}</span>
               </button>
             );
           })}

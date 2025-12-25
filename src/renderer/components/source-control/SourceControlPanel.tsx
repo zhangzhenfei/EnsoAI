@@ -1,4 +1,12 @@
-import { ChevronDown, GitBranch, GripVertical, History } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  ChevronDown,
+  GitBranch,
+  GripVertical,
+  History,
+  PanelLeft,
+  PanelLeftClose,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertDialog,
@@ -40,6 +48,9 @@ const MIN_WIDTH = 180;
 const MAX_WIDTH = 500;
 const DEFAULT_WIDTH = 256;
 
+// Animation config
+const panelTransition = { type: 'spring' as const, stiffness: 400, damping: 30 };
+
 interface SourceControlPanelProps {
   rootPath: string | undefined;
   isActive?: boolean;
@@ -58,6 +69,8 @@ export function SourceControlPanel({
   // Accordion state - collapsible sections
   const [changesExpanded, setChangesExpanded] = useState(true);
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [commitFilesExpanded, setCommitFilesExpanded] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // History view state
   const [selectedCommitHash, setSelectedCommitHash] = useState<string | null>(null);
@@ -117,6 +130,8 @@ export function SourceControlPanel({
   // Resizable panel state
   const [panelWidth, setPanelWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
+  const [commitFilesPanelWidth, setCommitFilesPanelWidth] = useState(DEFAULT_WIDTH);
+  const [isResizingCommitFiles, setIsResizingCommitFiles] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Discard/Delete confirmation dialog state
@@ -150,6 +165,28 @@ export function SourceControlPanel({
     setIsResizing(false);
   }, []);
 
+  // Commit files panel resize handlers
+  const commitFilesPanelRef = useRef<HTMLDivElement>(null);
+
+  const handleCommitFilesMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingCommitFiles(true);
+  }, []);
+
+  const handleCommitFilesMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizingCommitFiles || !commitFilesPanelRef.current) return;
+      const panelRect = commitFilesPanelRef.current.getBoundingClientRect();
+      const newWidth = e.clientX - panelRect.left;
+      setCommitFilesPanelWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, newWidth)));
+    },
+    [isResizingCommitFiles]
+  );
+
+  const handleCommitFilesMouseUp = useCallback(() => {
+    setIsResizingCommitFiles(false);
+  }, []);
+
   // Attach global mouse events for resizing
   useEffect(() => {
     if (isResizing) {
@@ -161,6 +198,17 @@ export function SourceControlPanel({
       };
     }
   }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  useEffect(() => {
+    if (isResizingCommitFiles) {
+      document.addEventListener('mousemove', handleCommitFilesMouseMove);
+      document.addEventListener('mouseup', handleCommitFilesMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleCommitFilesMouseMove);
+        document.removeEventListener('mouseup', handleCommitFilesMouseUp);
+      };
+    }
+  }, [isResizingCommitFiles, handleCommitFilesMouseMove, handleCommitFilesMouseUp]);
 
   const handleStage = useCallback(
     (paths: string[]) => {
@@ -297,119 +345,191 @@ export function SourceControlPanel({
     <div ref={containerRef} className="flex h-full flex-col">
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar Expand Button (when collapsed) */}
+        <AnimatePresence initial={false}>
+          {sidebarCollapsed && (
+            <motion.button
+              key="sidebar-expand"
+              type="button"
+              onClick={() => setSidebarCollapsed(false)}
+              className="flex h-full w-6 shrink-0 items-center justify-center border-r text-muted-foreground/60 hover:bg-accent/50 hover:text-foreground transition-colors"
+              title={t('Show sidebar')}
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 24, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={panelTransition}
+            >
+              <PanelLeft className="h-3.5 w-3.5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         {/* Left: Changes List */}
-        <div className="flex shrink-0 flex-col border-r" style={{ width: panelWidth }}>
-          {/* Changes Section (Collapsible) */}
-          <div
-            className={cn(
-              'flex flex-col border-b',
-              changesExpanded ? 'flex-1 min-h-0' : 'shrink-0'
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => setChangesExpanded(!changesExpanded)}
-              className="flex w-full items-center gap-2 px-4 py-2 text-left rounded-sm hover:bg-accent/50 transition-colors shrink-0 focus:outline-none"
+        <AnimatePresence initial={false}>
+          {!sidebarCollapsed && (
+            <motion.div
+              key="sidebar"
+              className="flex shrink-0 flex-col border-r overflow-hidden"
+              style={{ width: panelWidth }}
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: panelWidth, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={panelTransition}
             >
-              <ChevronDown
+              {/* Changes Section (Collapsible) */}
+              <div
                 className={cn(
-                  'h-4 w-4 text-muted-foreground transition-transform duration-200',
-                  !changesExpanded && '-rotate-90'
+                  'flex flex-col border-b',
+                  changesExpanded ? 'flex-1 min-h-0' : 'shrink-0'
                 )}
-              />
-              <GitBranch className="h-4 w-4" />
-              <span className="text-sm font-medium">{t('Changes')}</span>
-            </button>
-
-            {changesExpanded && (
-              <>
-                <div className="flex-1 overflow-hidden min-h-0">
-                  <ChangesList
-                    staged={staged}
-                    unstaged={unstaged}
-                    selectedFile={selectedFile}
-                    onFileClick={handleFileClick}
-                    onStage={handleStage}
-                    onUnstage={handleUnstage}
-                    onDiscard={handleDiscard}
-                    onDeleteUntracked={handleDeleteUntracked}
-                  />
+              >
+                <div className="group flex items-center shrink-0 rounded-sm hover:bg-accent/50 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setChangesExpanded(!changesExpanded)}
+                    className="flex flex-1 items-center gap-2 px-4 py-2 text-left focus:outline-none"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 text-muted-foreground transition-transform duration-200',
+                        !changesExpanded && '-rotate-90'
+                      )}
+                    />
+                    <GitBranch className="h-4 w-4" />
+                    <span className="text-sm font-medium">{t('Changes')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSidebarCollapsed(true)}
+                    className="mr-2 flex h-5 w-5 items-center justify-center rounded text-muted-foreground/60 group-hover:text-foreground transition-colors"
+                    title={t('Hide sidebar')}
+                  >
+                    <PanelLeftClose className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-                {/* Commit Box */}
-                <CommitBox
-                  stagedCount={staged.length}
-                  onCommit={handleCommit}
-                  isCommitting={commitMutation.isPending}
-                />
-              </>
-            )}
-          </div>
 
-          {/* History Section (Collapsible) */}
-          <div className={cn('flex flex-col', historyExpanded ? 'flex-1 min-h-0' : 'shrink-0')}>
-            <button
-              type="button"
-              onClick={() => setHistoryExpanded(!historyExpanded)}
-              className="flex w-full items-center gap-2 px-4 py-2 text-left rounded-sm hover:bg-accent/50 transition-colors shrink-0 focus:outline-none"
-            >
-              <ChevronDown
-                className={cn(
-                  'h-4 w-4 text-muted-foreground transition-transform duration-200',
-                  !historyExpanded && '-rotate-90'
+                {changesExpanded && (
+                  <>
+                    <div className="flex-1 overflow-hidden min-h-0">
+                      <ChangesList
+                        staged={staged}
+                        unstaged={unstaged}
+                        selectedFile={selectedFile}
+                        onFileClick={handleFileClick}
+                        onStage={handleStage}
+                        onUnstage={handleUnstage}
+                        onDiscard={handleDiscard}
+                        onDeleteUntracked={handleDeleteUntracked}
+                      />
+                    </div>
+                    {/* Commit Box */}
+                    <CommitBox
+                      stagedCount={staged.length}
+                      onCommit={handleCommit}
+                      isCommitting={commitMutation.isPending}
+                    />
+                  </>
                 )}
-              />
-              <History className="h-4 w-4" />
-              <span className="text-sm font-medium">{t('History')}</span>
-            </button>
-
-            {historyExpanded && (
-              <div className="h-full flex-1 overflow-hidden min-h-0">
-                <CommitHistoryList
-                  commits={commits}
-                  selectedHash={selectedCommitHash}
-                  onCommitClick={(hash) => {
-                    setSelectedCommitHash(hash);
-                    setSelectedCommitFile(null);
-                  }}
-                  isLoading={commitsLoading}
-                  isFetchingNextPage={isFetchingNextPage}
-                  hasNextPage={hasNextPage}
-                  onLoadMore={() => {
-                    if (hasNextPage && !isFetchingNextPage) {
-                      fetchNextPage();
-                    }
-                  }}
-                />
               </div>
-            )}
-          </div>
-        </div>
+
+              {/* History Section (Collapsible) */}
+              <div className={cn('flex flex-col', historyExpanded ? 'flex-1 min-h-0' : 'shrink-0')}>
+                <button
+                  type="button"
+                  onClick={() => setHistoryExpanded(!historyExpanded)}
+                  className="flex w-full items-center gap-2 px-4 py-2 text-left rounded-sm hover:bg-accent/50 transition-colors shrink-0 focus:outline-none"
+                >
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 text-muted-foreground transition-transform duration-200',
+                      !historyExpanded && '-rotate-90'
+                    )}
+                  />
+                  <History className="h-4 w-4" />
+                  <span className="text-sm font-medium">{t('History')}</span>
+                </button>
+
+                {historyExpanded && (
+                  <div className="h-full flex-1 overflow-hidden min-h-0">
+                    <CommitHistoryList
+                      commits={commits}
+                      selectedHash={selectedCommitHash}
+                      onCommitClick={(hash) => {
+                        setSelectedCommitHash(hash);
+                        setSelectedCommitFile(null);
+                        setCommitFilesExpanded(true);
+                      }}
+                      isLoading={commitsLoading}
+                      isFetchingNextPage={isFetchingNextPage}
+                      hasNextPage={hasNextPage}
+                      onLoadMore={() => {
+                        if (hasNextPage && !isFetchingNextPage) {
+                          fetchNextPage();
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Resize Handle */}
-        <div
-          className={cn(
-            'group flex w-1 shrink-0 cursor-col-resize items-center justify-center hover:bg-accent',
-            isResizing && 'bg-accent'
-          )}
-          onMouseDown={handleMouseDown}
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
-        </div>
+        {!sidebarCollapsed && (
+          <div
+            className={cn(
+              'group flex w-1 shrink-0 cursor-col-resize items-center justify-center hover:bg-accent',
+              isResizing && 'bg-accent'
+            )}
+            onMouseDown={handleMouseDown}
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
+          </div>
+        )}
 
         {/* Right: Diff Viewer or Commit Details */}
         <div className="flex flex-1 overflow-hidden">
           {selectedCommitHash ? (
             <>
-              {/* Commit File List */}
-              <div className="h-full shrink-0 border-r" style={{ width: panelWidth }}>
-                <CommitFileList
-                  files={commitFiles}
-                  selectedFile={selectedCommitFile}
-                  onFileClick={handleCommitFileClick}
-                  isLoading={commitFilesLoading}
-                  commitHash={selectedCommitHash}
-                />
-              </div>
+              {/* Commit File List (Collapsible) */}
+              <AnimatePresence initial={false}>
+                {commitFilesExpanded && (
+                  <motion.div
+                    key="commit-files"
+                    ref={commitFilesPanelRef}
+                    className="flex h-full shrink-0 overflow-hidden"
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: commitFilesPanelWidth + 4, opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={panelTransition}
+                  >
+                    <div
+                      className="h-full shrink-0 border-r"
+                      style={{ width: commitFilesPanelWidth }}
+                    >
+                      <CommitFileList
+                        files={commitFiles}
+                        selectedFile={selectedCommitFile}
+                        onFileClick={handleCommitFileClick}
+                        isLoading={commitFilesLoading}
+                        commitHash={selectedCommitHash}
+                        onCollapse={() => setCommitFilesExpanded(false)}
+                      />
+                    </div>
+                    {/* Resize Handle for Commit Files Panel */}
+                    <div
+                      className={cn(
+                        'group flex w-1 shrink-0 cursor-col-resize items-center justify-center hover:bg-accent',
+                        isResizingCommitFiles && 'bg-accent'
+                      )}
+                      onMouseDown={handleCommitFilesMouseDown}
+                    >
+                      <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Commit Diff Viewer */}
               <div className="flex-1 overflow-hidden">
@@ -418,6 +538,8 @@ export function SourceControlPanel({
                   fileDiff={commitDiff}
                   filePath={selectedCommitFile}
                   isLoading={commitDiffLoading}
+                  filesCollapsed={!commitFilesExpanded}
+                  onExpandFiles={() => setCommitFilesExpanded(true)}
                 />
               </div>
             </>
