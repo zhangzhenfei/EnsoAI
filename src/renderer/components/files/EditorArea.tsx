@@ -9,7 +9,13 @@ import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import { useCallback, useEffect, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { createHighlighter } from 'shiki';
+import { createHighlighterCore } from 'shiki/core';
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
+import langAstro from 'shiki/langs/astro.mjs';
+import langSvelte from 'shiki/langs/svelte.mjs';
+import langVue from 'shiki/langs/vue.mjs';
+import themeVitesseDark from 'shiki/themes/vitesse-dark.mjs';
+import themeVitesseLight from 'shiki/themes/vitesse-light.mjs';
 import {
   Empty,
   EmptyDescription,
@@ -43,10 +49,11 @@ const SHIKI_LANGUAGES = ['vue', 'svelte', 'astro'];
 const SHIKI_THEMES = ['vitesse-dark', 'vitesse-light'];
 
 // Register Shiki languages with Monaco for syntax highlighting
-// Uses top-level await - supported in ES modules
-const shikiHighlighter = await createHighlighter({
-  themes: SHIKI_THEMES as ['vitesse-dark', 'vitesse-light'],
-  langs: SHIKI_LANGUAGES as ['vue', 'svelte', 'astro'],
+// Uses fine-grained imports for smaller bundle size (no WASM needed)
+const shikiHighlighter = await createHighlighterCore({
+  themes: [themeVitesseDark, themeVitesseLight],
+  langs: [langVue, langSvelte, langAstro],
+  engine: createJavaScriptRegexEngine(),
 });
 
 // Register language IDs with Monaco (include extensions for auto-detection)
