@@ -1,4 +1,5 @@
 import { exec } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import type { ShellConfig, TerminalCreateOptions } from '@shared/types';
@@ -12,6 +13,31 @@ interface PtySession {
   cwd: string;
   onData: (data: string) => void;
   onExit?: (exitCode: number, signal?: number) => void;
+}
+
+function findFallbackShell(): string {
+  const candidates = [
+    '/bin/zsh',
+    '/usr/bin/zsh',
+    '/usr/local/bin/zsh',
+    '/bin/bash',
+    '/usr/bin/bash',
+    '/usr/local/bin/bash',
+    '/bin/sh',
+    '/usr/bin/sh',
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return '/bin/sh';
+}
+
+function adjustArgsForShell(shell: string, args: string[]): string[] {
+  // dash (/bin/sh on Ubuntu) doesn't support login flag "-l"
+  if (shell.endsWith('/sh')) {
+    return args.filter((a) => a !== '-l');
+  }
+  return args;
 }
 
 // GUI apps don't inherit shell PATH, add common paths
@@ -71,19 +97,56 @@ export class PtyManager {
       args = options.args || [];
     }
 
-    const ptyProcess = pty.spawn(shell, args, {
-      name: 'xterm-256color',
-      cols: options.cols || 80,
-      rows: options.rows || 24,
-      cwd,
-      env: {
-        ...process.env,
-        ...options.env,
-        PATH: getEnhancedPath(),
-        TERM: 'xterm-256color',
-        COLORTERM: 'truecolor',
-      } as Record<string, string>,
-    });
+    if (!isWindows && shell.includes('/') && !existsSync(shell)) {
+      const fallbackShell = findFallbackShell();
+      console.warn(`[pty] Shell not found: ${shell}. Falling back to ${fallbackShell}`);
+      shell = fallbackShell;
+      args = adjustArgsForShell(shell, args);
+    }
+
+    let ptyProcess: pty.IPty;
+    try {
+      ptyProcess = pty.spawn(shell, args, {
+        name: 'xterm-256color',
+        cols: options.cols || 80,
+        rows: options.rows || 24,
+        cwd,
+        env: {
+          ...process.env,
+          ...options.env,
+          PATH: getEnhancedPath(),
+          TERM: 'xterm-256color',
+          COLORTERM: 'truecolor',
+        } as Record<string, string>,
+      });
+    } catch (error) {
+      if (!isWindows) {
+        const fallbackShell = findFallbackShell();
+        if (fallbackShell !== shell) {
+          const fallbackArgs = adjustArgsForShell(fallbackShell, args);
+          console.warn(`[pty] Failed to spawn ${shell}. Falling back to ${fallbackShell}`);
+          ptyProcess = pty.spawn(fallbackShell, fallbackArgs, {
+            name: 'xterm-256color',
+            cols: options.cols || 80,
+            rows: options.rows || 24,
+            cwd,
+            env: {
+              ...process.env,
+              ...options.env,
+              PATH: getEnhancedPath(),
+              TERM: 'xterm-256color',
+              COLORTERM: 'truecolor',
+            } as Record<string, string>,
+          });
+          shell = fallbackShell;
+          args = fallbackArgs;
+        } else {
+          throw error;
+        }
+      } else {
+        throw error;
+      }
+    }
 
     ptyProcess.onData((data) => {
       onData(data);

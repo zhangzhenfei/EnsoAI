@@ -238,7 +238,10 @@ class ShellDetector {
 
     const shell = process.env.SHELL;
     if (shell) {
-      return shell;
+      // Ignore invalid absolute $SHELL values (common when launched from GUI or misconfigured)
+      if (!shell.startsWith('/') || existsSync(shell)) {
+        return shell;
+      }
     }
 
     const shells = ['/bin/zsh', '/bin/bash', '/bin/sh'];
