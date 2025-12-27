@@ -1,6 +1,9 @@
 import {
+  type ConflictResolution,
   IPC_CHANNELS,
   type WorktreeCreateOptions,
+  type WorktreeMergeCleanupOptions,
+  type WorktreeMergeOptions,
   type WorktreeRemoveOptions,
 } from '@shared/types';
 import { ipcMain } from 'electron';
@@ -60,4 +63,52 @@ export function registerWorktreeHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.WORKTREE_ACTIVATE, async (_, worktreePaths: string[]) => {
     updateClaudeWorkspaceFolders(worktreePaths);
   });
+
+  // Merge handlers
+  ipcMain.handle(
+    IPC_CHANNELS.WORKTREE_MERGE,
+    async (_, workdir: string, options: WorktreeMergeOptions) => {
+      const service = getWorktreeService(workdir);
+      return service.merge(options);
+    }
+  );
+
+  ipcMain.handle(IPC_CHANNELS.WORKTREE_MERGE_STATE, async (_, workdir: string) => {
+    const service = getWorktreeService(workdir);
+    return service.getMergeState(workdir);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WORKTREE_MERGE_CONFLICTS, async (_, workdir: string) => {
+    const service = getWorktreeService(workdir);
+    return service.getConflicts(workdir);
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.WORKTREE_MERGE_CONFLICT_CONTENT,
+    async (_, workdir: string, filePath: string) => {
+      const service = getWorktreeService(workdir);
+      return service.getConflictContent(workdir, filePath);
+    }
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.WORKTREE_MERGE_RESOLVE,
+    async (_, workdir: string, resolution: ConflictResolution) => {
+      const service = getWorktreeService(workdir);
+      await service.resolveConflict(workdir, resolution);
+    }
+  );
+
+  ipcMain.handle(IPC_CHANNELS.WORKTREE_MERGE_ABORT, async (_, workdir: string) => {
+    const service = getWorktreeService(workdir);
+    await service.abortMerge(workdir);
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.WORKTREE_MERGE_CONTINUE,
+    async (_, workdir: string, message?: string, cleanupOptions?: WorktreeMergeCleanupOptions) => {
+      const service = getWorktreeService(workdir);
+      return service.continueMerge(workdir, message, cleanupOptions);
+    }
+  );
 }

@@ -2,6 +2,7 @@ import type { GitBranch as GitBranchType, GitWorktree, WorktreeCreateOptions } f
 import {
   FolderOpen,
   GitBranch,
+  GitMerge,
   PanelLeftClose,
   Plus,
   RefreshCw,
@@ -49,6 +50,7 @@ interface WorktreePanelProps {
     worktree: GitWorktree,
     options?: { deleteBranch?: boolean; force?: boolean }
   ) => Promise<void>;
+  onMergeWorktree?: (worktree: GitWorktree) => void;
   onRefresh: () => void;
   onInitGit?: () => Promise<void>;
   width?: number;
@@ -69,6 +71,7 @@ export function WorktreePanel({
   onSelectWorktree,
   onCreateWorktree,
   onRemoveWorktree,
+  onMergeWorktree,
   onRefresh,
   onInitGit,
   width: _width = 280,
@@ -258,6 +261,7 @@ export function WorktreePanel({
                 isActive={activeWorktree?.path === worktree.path}
                 onClick={() => onSelectWorktree(worktree)}
                 onDelete={() => setWorktreeToDelete(worktree)}
+                onMerge={onMergeWorktree ? () => onMergeWorktree(worktree) : undefined}
               />
             ))}
           </div>
@@ -375,9 +379,10 @@ interface WorktreeItemProps {
   isActive: boolean;
   onClick: () => void;
   onDelete: () => void;
+  onMerge?: () => void;
 }
 
-function WorktreeItem({ worktree, isActive, onClick, onDelete }: WorktreeItemProps) {
+function WorktreeItem({ worktree, isActive, onClick, onDelete, onMerge }: WorktreeItemProps) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -510,7 +515,7 @@ function WorktreeItem({ worktree, isActive, onClick, onDelete }: WorktreeItemPro
             {activity.agentCount > 0 && (
               <button
                 type="button"
-                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent/50"
                 onClick={() => {
                   setMenuOpen(false);
                   closeAgentSessions(worktree.path);
@@ -526,7 +531,7 @@ function WorktreeItem({ worktree, isActive, onClick, onDelete }: WorktreeItemPro
             {activity.terminalCount > 0 && (
               <button
                 type="button"
-                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent/50"
                 onClick={() => {
                   setMenuOpen(false);
                   closeTerminalSessions(worktree.path);
@@ -541,11 +546,29 @@ function WorktreeItem({ worktree, isActive, onClick, onDelete }: WorktreeItemPro
             {/* Separator if there are activity options */}
             {hasActivity && <div className="my-1 h-px bg-border" />}
 
+            {/* Merge to Branch */}
+            {onMerge && !isMain && !isPrunable && (
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent/50"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onMerge();
+                }}
+              >
+                <GitMerge className="h-4 w-4" />
+                {t('Merge to Branch...')}
+              </button>
+            )}
+
+            {/* Separator before delete */}
+            {onMerge && !isMain && !isPrunable && <div className="my-1 h-px bg-border" />}
+
             {/* Delete Worktree */}
             <button
               type="button"
               className={cn(
-                'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent',
+                'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent/50',
                 isMain && 'pointer-events-none opacity-50'
               )}
               onClick={() => {

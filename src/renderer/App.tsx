@@ -1,4 +1,10 @@
-import type { GitWorktree, WorktreeCreateOptions } from '@shared/types';
+import type {
+  GitWorktree,
+  WorktreeCreateOptions,
+  WorktreeMergeCleanupOptions,
+  WorktreeMergeOptions,
+  WorktreeMergeResult,
+} from '@shared/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 import { panelTransition, type Repository, type TabId } from './App/constants';
@@ -20,10 +26,21 @@ import {
   DialogPopup,
   DialogTitle,
 } from './components/ui/dialog';
+import { toastManager } from './components/ui/toast';
+import { MergeEditor, MergeWorktreeDialog } from './components/worktree';
 import { useEditor } from './hooks/useEditor';
 import { useGitBranches, useGitInit } from './hooks/useGit';
-import { useWorktreeCreate, useWorktreeList, useWorktreeRemove } from './hooks/useWorktree';
+import {
+  useWorktreeCreate,
+  useWorktreeList,
+  useWorktreeMerge,
+  useWorktreeMergeAbort,
+  useWorktreeMergeContinue,
+  useWorktreeRemove,
+  useWorktreeResolveConflict,
+} from './hooks/useWorktree';
 import { useI18n } from './i18n';
+import { useEditorStore } from './stores/editor';
 import { useNavigationStore } from './stores/navigation';
 import { useSettingsStore } from './stores/settings';
 import { useWorktreeStore } from './stores/worktree';
@@ -54,10 +71,23 @@ export default function App() {
   // Close confirmation dialog state
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
+  // Merge dialog state
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [mergeWorktree, setMergeWorktree] = useState<GitWorktree | null>(null);
+  const [mergeConflicts, setMergeConflicts] = useState<WorktreeMergeResult | null>(null);
+  const [pendingMergeOptions, setPendingMergeOptions] = useState<
+    | (Required<Pick<WorktreeMergeCleanupOptions, 'worktreePath' | 'sourceBranch'>> &
+        Pick<WorktreeMergeCleanupOptions, 'deleteWorktreeAfterMerge' | 'deleteBranchAfterMerge'>)
+    | null
+  >(null);
+
   // Panel resize hook
   const { repositoryWidth, worktreeWidth, resizing, handleResizeStart } = usePanelResize();
 
   const worktreeError = useWorktreeStore((s) => s.error);
+  const switchEditorWorktree = useEditorStore((s) => s.switchWorktree);
+  const clearAllEditorStates = useEditorStore((s) => s.clearAllWorktreeStates);
+  const clearEditorWorktreeState = useEditorStore((s) => s.clearWorktreeState);
 
   // Initialize settings store (for theme hydration)
   useSettingsStore();
@@ -161,6 +191,12 @@ export default function App() {
   const createWorktreeMutation = useWorktreeCreate();
   const removeWorktreeMutation = useWorktreeRemove();
   const gitInitMutation = useGitInit();
+
+  // Merge mutations
+  const mergeMutation = useWorktreeMerge();
+  const resolveConflictMutation = useWorktreeResolveConflict();
+  const abortMergeMutation = useWorktreeMergeAbort();
+  const continueMergeMutation = useWorktreeMergeContinue();
 
   // Load saved repositories and selection from localStorage
   useEffect(() => {
@@ -271,6 +307,7 @@ export default function App() {
   const handleSelectRepo = (repoPath: string) => {
     setSelectedRepo(repoPath);
     setActiveWorktree(null);
+    clearAllEditorStates(); // Clear all editor states when switching repo
   };
 
   const handleSelectWorktree = useCallback(
@@ -283,6 +320,9 @@ export default function App() {
         }));
       }
 
+      // Switch editor state to new worktree (saves current tabs, loads saved tabs)
+      switchEditorWorktree(worktree.path);
+
       // Switch to new worktree
       setActiveWorktree(worktree);
 
@@ -290,7 +330,7 @@ export default function App() {
       const savedTab = worktreeTabMap[worktree.path] || 'chat';
       setActiveTab(savedTab);
     },
-    [activeWorktree, activeTab, worktreeTabMap]
+    [activeWorktree, activeTab, worktreeTabMap, switchEditorWorktree]
   );
 
   // Handle switching worktree by path (used by notification click)
@@ -359,6 +399,8 @@ export default function App() {
         branch: worktree.branch || undefined,
       },
     });
+    // Clear editor state for the removed worktree
+    clearEditorWorktreeState(worktree.path);
     // Clear selection if the active worktree was removed.
     if (activeWorktree?.path === worktree.path) {
       setActiveWorktree(null);
@@ -376,6 +418,75 @@ export default function App() {
     } catch (error) {
       console.error('Failed to initialize git repository:', error);
     }
+  };
+
+  // Merge handlers
+  const handleOpenMergeDialog = (worktree: GitWorktree) => {
+    setMergeWorktree(worktree);
+    setMergeDialogOpen(true);
+  };
+
+  const handleMerge = async (options: WorktreeMergeOptions): Promise<WorktreeMergeResult> => {
+    if (!selectedRepo) {
+      return { success: false, merged: false, error: 'No repository selected' };
+    }
+    return mergeMutation.mutateAsync({ workdir: selectedRepo, options });
+  };
+
+  const handleMergeConflicts = (result: WorktreeMergeResult, options: WorktreeMergeOptions) => {
+    setMergeDialogOpen(false); // Close merge dialog first
+    setMergeConflicts(result);
+    // Store the merge options for cleanup after conflict resolution
+    setPendingMergeOptions({
+      worktreePath: options.worktreePath,
+      sourceBranch: mergeWorktree?.branch || '',
+      deleteWorktreeAfterMerge: options.deleteWorktreeAfterMerge,
+      deleteBranchAfterMerge: options.deleteBranchAfterMerge,
+    });
+  };
+
+  const handleResolveConflict = async (file: string, content: string) => {
+    if (!selectedRepo) return;
+    await resolveConflictMutation.mutateAsync({
+      workdir: selectedRepo,
+      resolution: { file, content },
+    });
+  };
+
+  const handleAbortMerge = async () => {
+    if (!selectedRepo) return;
+    await abortMergeMutation.mutateAsync({ workdir: selectedRepo });
+    setMergeConflicts(null);
+    setPendingMergeOptions(null);
+    refetch();
+  };
+
+  const handleCompleteMerge = async (message: string) => {
+    if (!selectedRepo) return;
+    const result = await continueMergeMutation.mutateAsync({
+      workdir: selectedRepo,
+      message,
+      cleanupOptions: pendingMergeOptions || undefined,
+    });
+    if (result.success) {
+      // Show warnings if any (combined into a single toast)
+      if (result.warnings && result.warnings.length > 0) {
+        toastManager.add({
+          type: 'warning',
+          title: t('Merge completed with warnings'),
+          description: result.warnings.join('\n'),
+        });
+      }
+      setMergeConflicts(null);
+      setPendingMergeOptions(null);
+      refetch();
+      refetchBranches();
+    }
+  };
+
+  const getConflictContent = async (file: string) => {
+    if (!selectedRepo) throw new Error('No repository selected');
+    return window.electronAPI.worktree.getConflictContent(selectedRepo, file);
   };
 
   return (
@@ -432,6 +543,7 @@ export default function App() {
               onSelectWorktree={handleSelectWorktree}
               onCreateWorktree={handleCreateWorktree}
               onRemoveWorktree={handleRemoveWorktree}
+              onMergeWorktree={handleOpenMergeDialog}
               onInitGit={handleInitGit}
               onRefresh={() => {
                 refetch();
@@ -526,6 +638,36 @@ export default function App() {
           </DialogFooter>
         </DialogPopup>
       </Dialog>
+
+      {/* Merge Worktree Dialog */}
+      {mergeWorktree && (
+        <MergeWorktreeDialog
+          open={mergeDialogOpen}
+          onOpenChange={setMergeDialogOpen}
+          worktree={mergeWorktree}
+          branches={branches}
+          isLoading={mergeMutation.isPending}
+          onMerge={handleMerge}
+          onConflicts={handleMergeConflicts}
+        />
+      )}
+
+      {/* Merge Conflict Editor */}
+      {mergeConflicts?.conflicts && mergeConflicts.conflicts.length > 0 && (
+        <Dialog open={true} onOpenChange={() => {}}>
+          <DialogPopup className="h-[90vh] max-w-[95vw] p-0" showCloseButton={false}>
+            <MergeEditor
+              conflicts={mergeConflicts.conflicts}
+              workdir={selectedRepo || ''}
+              sourceBranch={mergeWorktree?.branch || undefined}
+              onResolve={handleResolveConflict}
+              onComplete={handleCompleteMerge}
+              onAbort={handleAbortMerge}
+              getConflictContent={getConflictContent}
+            />
+          </DialogPopup>
+        </Dialog>
+      )}
     </div>
   );
 }

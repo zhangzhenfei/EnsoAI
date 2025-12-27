@@ -5,6 +5,7 @@ import type {
   AgentCliStatus,
   AgentMetadata,
   CommitFileChange,
+  ConflictResolution,
   CustomAgent,
   DetectedApp,
   FileChange,
@@ -15,10 +16,16 @@ import type {
   GitLogEntry,
   GitStatus,
   GitWorktree,
+  MergeConflict,
+  MergeConflictContent,
+  MergeState,
   ShellInfo,
   TerminalCreateOptions,
   TerminalResizeOptions,
   WorktreeCreateOptions,
+  WorktreeMergeCleanupOptions,
+  WorktreeMergeOptions,
+  WorktreeMergeResult,
   WorktreeRemoveOptions,
 } from '@shared/types';
 import { IPC_CHANNELS } from '@shared/types';
@@ -113,6 +120,25 @@ const electronAPI = {
       ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_REMOVE, workdir, options),
     activate: (worktreePaths: string[]): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_ACTIVATE, worktreePaths),
+    // Merge operations
+    merge: (workdir: string, options: WorktreeMergeOptions): Promise<WorktreeMergeResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_MERGE, workdir, options),
+    getMergeState: (workdir: string): Promise<MergeState> =>
+      ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_MERGE_STATE, workdir),
+    getConflicts: (workdir: string): Promise<MergeConflict[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_MERGE_CONFLICTS, workdir),
+    getConflictContent: (workdir: string, filePath: string): Promise<MergeConflictContent> =>
+      ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_MERGE_CONFLICT_CONTENT, workdir, filePath),
+    resolveConflict: (workdir: string, resolution: ConflictResolution): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_MERGE_RESOLVE, workdir, resolution),
+    abortMerge: (workdir: string): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_MERGE_ABORT, workdir),
+    continueMerge: (
+      workdir: string,
+      message?: string,
+      cleanupOptions?: WorktreeMergeCleanupOptions
+    ): Promise<WorktreeMergeResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_MERGE_CONTINUE, workdir, message, cleanupOptions),
   },
 
   // Files

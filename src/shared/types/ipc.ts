@@ -29,6 +29,13 @@ export const IPC_CHANNELS = {
   WORKTREE_ADD: 'worktree:add',
   WORKTREE_REMOVE: 'worktree:remove',
   WORKTREE_ACTIVATE: 'worktree:activate',
+  WORKTREE_MERGE: 'worktree:merge',
+  WORKTREE_MERGE_STATE: 'worktree:merge:state',
+  WORKTREE_MERGE_CONFLICTS: 'worktree:merge:conflicts',
+  WORKTREE_MERGE_CONFLICT_CONTENT: 'worktree:merge:conflictContent',
+  WORKTREE_MERGE_RESOLVE: 'worktree:merge:resolve',
+  WORKTREE_MERGE_ABORT: 'worktree:merge:abort',
+  WORKTREE_MERGE_CONTINUE: 'worktree:merge:continue',
 
   // Files
   FILE_READ: 'file:read',
