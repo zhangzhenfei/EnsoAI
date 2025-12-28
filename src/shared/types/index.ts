@@ -4,6 +4,7 @@ export * from './cli';
 export * from './file';
 export * from './git';
 export * from './ipc';
+export * from './search';
 export * from './shell';
 export * from './terminal';
 export * from './worktree';

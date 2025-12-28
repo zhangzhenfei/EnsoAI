@@ -116,6 +116,11 @@ export const IPC_CHANNELS = {
   MCP_BRIDGE_GET_STATUS: 'mcp:bridge:getStatus',
   MCP_SELECTION_CHANGED: 'mcp:selection:changed',
   MCP_AT_MENTIONED: 'mcp:at:mentioned',
+
+  // Search
+  SEARCH_FILES: 'search:files',
+  SEARCH_CONTENT: 'search:content',
+  SEARCH_CHECK_RG: 'search:checkRg',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

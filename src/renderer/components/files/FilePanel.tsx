@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
+import { GlobalSearchDialog, type SearchMode } from '@/components/search';
 import { useEditor } from '@/hooks/useEditor';
 import { useFileTree } from '@/hooks/useFileTree';
+import { type TerminalKeybinding, useSettingsStore } from '@/stores/settings';
 import { EditorArea } from './EditorArea';
 import { FileTree } from './FileTree';
 import { NewItemDialog } from './NewItemDialog';
+
+// Helper to check if a keyboard event matches a keybinding
+function matchesKeybinding(e: KeyboardEvent, binding: TerminalKeybinding): boolean {
+  const keyMatches = e.key.toLowerCase() === binding.key.toLowerCase();
+  const ctrlMatches = !!binding.ctrl === e.ctrlKey;
+  const altMatches = !!binding.alt === e.altKey;
+  const shiftMatches = !!binding.shift === e.shiftKey;
+  const metaMatches = !!binding.meta === e.metaKey;
+  return keyMatches && ctrlMatches && altMatches && shiftMatches && metaMatches;
+}
 
 interface FilePanelProps {
   rootPath: string | undefined;
@@ -37,15 +49,39 @@ export function FilePanel({ rootPath, isActive = false }: FilePanelProps) {
     setTabViewState,
     reorderTabs,
     setPendingCursor,
+    navigateToFile,
   } = useEditor();
 
   const [newItemType, setNewItemType] = useState<NewItemType>(null);
   const [newItemParentPath, setNewItemParentPath] = useState<string>('');
 
-  // Cmd+W: close tab, Cmd+1-9: switch tab
+  // Global search state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchMode, setSearchMode] = useState<SearchMode>('content');
+
+  // Get search keybindings from settings
+  const searchKeybindings = useSettingsStore((s) => s.searchKeybindings);
+
+  // Cmd+W: close tab, Cmd+1-9: switch tab, search shortcuts from settings
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isActive) return;
+
+      // File search (default: Cmd+P)
+      if (matchesKeybinding(e, searchKeybindings.searchFiles)) {
+        e.preventDefault();
+        setSearchMode('files');
+        setSearchOpen(true);
+        return;
+      }
+
+      // Content search (default: Cmd+Shift+F)
+      if (matchesKeybinding(e, searchKeybindings.searchContent)) {
+        e.preventDefault();
+        setSearchMode('content');
+        setSearchOpen(true);
+        return;
+      }
 
       if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
         e.preventDefault();
@@ -63,7 +99,7 @@ export function FilePanel({ rootPath, isActive = false }: FilePanelProps) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isActive, tabs, activeTab, closeFile, setActiveFile]);
+  }, [isActive, tabs, activeTab, closeFile, setActiveFile, searchKeybindings]);
 
   // Handle file click (single click = open in editor)
   const handleFileClick = useCallback(
@@ -183,6 +219,14 @@ export function FilePanel({ rootPath, isActive = false }: FilePanelProps) {
     [rootPath, expandedPaths, toggleExpand]
   );
 
+  // Handle open file from search
+  const handleSearchOpenFile = useCallback(
+    (path: string, line?: number, column?: number) => {
+      navigateToFile(path, line, column);
+    },
+    [navigateToFile]
+  );
+
   if (!rootPath) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -205,6 +249,10 @@ export function FilePanel({ rootPath, isActive = false }: FilePanelProps) {
           onRename={handleRename}
           onDelete={handleDelete}
           onRefresh={refresh}
+          onOpenSearch={() => {
+            setSearchMode('content');
+            setSearchOpen(true);
+          }}
           isLoading={isLoading}
           rootPath={rootPath}
         />
@@ -238,6 +286,15 @@ export function FilePanel({ rootPath, isActive = false }: FilePanelProps) {
           setNewItemType(null);
           setNewItemParentPath('');
         }}
+      />
+
+      {/* Global Search Dialog */}
+      <GlobalSearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        rootPath={rootPath}
+        initialMode={searchMode}
+        onOpenFile={handleSearchOpenFile}
       />
     </div>
   );

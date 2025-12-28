@@ -6,12 +6,16 @@ import type {
   AgentMetadata,
   CommitFileChange,
   ConflictResolution,
+  ContentSearchParams,
+  ContentSearchResult,
   CustomAgent,
   DetectedApp,
   FileChange,
   FileChangeEvent,
   FileDiff,
   FileEntry,
+  FileSearchParams,
+  FileSearchResult,
   GitBranch,
   GitLogEntry,
   GitStatus,
@@ -399,6 +403,15 @@ const electronAPI = {
     sendAtMentioned: (params: { filePath: string; lineStart: number; lineEnd: number }): void => {
       ipcRenderer.send(IPC_CHANNELS.MCP_AT_MENTIONED, params);
     },
+  },
+
+  // Search
+  search: {
+    files: (params: FileSearchParams): Promise<FileSearchResult[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SEARCH_FILES, params),
+    content: (params: ContentSearchParams): Promise<ContentSearchResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SEARCH_CONTENT, params),
+    checkRipgrep: (): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.SEARCH_CHECK_RG),
   },
 };
 

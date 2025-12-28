@@ -6,6 +6,7 @@ import {
   Loader2,
   Pencil,
   RefreshCw,
+  Search,
   Trash2,
 } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
@@ -26,6 +27,7 @@ interface FileTreeProps {
   onRename: (path: string, newName: string) => void;
   onDelete: (path: string) => void;
   onRefresh: () => void;
+  onOpenSearch?: () => void;
   isLoading?: boolean;
   rootPath?: string;
 }
@@ -40,6 +42,7 @@ export function FileTree({
   onRename,
   onDelete,
   onRefresh,
+  onOpenSearch,
   isLoading,
   rootPath,
 }: FileTreeProps) {
@@ -107,7 +110,7 @@ export function FileTree({
     <ScrollArea className="h-full">
       <div className="py-1">
         {/* Toolbar */}
-        <div className="flex items-center justify-end gap-1 px-2 pb-1">
+        <div className="flex items-center justify-end gap-1 pl-2 pr-3 pb-1">
           <button
             type="button"
             onClick={() => rootPath && onCreateFile(rootPath)}
@@ -132,6 +135,16 @@ export function FileTree({
           >
             <RefreshCw className="h-4 w-4" />
           </button>
+          {onOpenSearch && (
+            <button
+              type="button"
+              onClick={onOpenSearch}
+              className="p-1 text-muted-foreground hover:text-foreground rounded"
+              title="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          )}
         </div>
         {/* Tree nodes */}
         {tree.map((node) => (

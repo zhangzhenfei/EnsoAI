@@ -144,6 +144,12 @@ export interface SourceControlKeybindings {
   nextDiff: TerminalKeybinding;
 }
 
+// Search keybindings
+export interface SearchKeybindings {
+  searchFiles: TerminalKeybinding;
+  searchContent: TerminalKeybinding;
+}
+
 // Claude Code integration settings
 export interface ClaudeCodeIntegrationSettings {
   enabled: boolean;
@@ -299,6 +305,11 @@ export const defaultSourceControlKeybindings: SourceControlKeybindings = {
   nextDiff: { key: 'F8' }, // F8
 };
 
+export const defaultSearchKeybindings: SearchKeybindings = {
+  searchFiles: { key: 'p', meta: true }, // Cmd/Win+P
+  searchContent: { key: 'f', meta: true, shift: true }, // Cmd/Win+Shift+F
+};
+
 interface SettingsState {
   theme: Theme;
   language: Locale;
@@ -315,6 +326,7 @@ interface SettingsState {
   mainTabKeybindings: MainTabKeybindings;
   agentKeybindings: AgentKeybindings;
   sourceControlKeybindings: SourceControlKeybindings;
+  searchKeybindings: SearchKeybindings;
   editorSettings: EditorSettings;
   agentSettings: AgentSettings;
   customAgents: CustomAgent[];
@@ -343,6 +355,7 @@ interface SettingsState {
   setMainTabKeybindings: (keybindings: MainTabKeybindings) => void;
   setAgentKeybindings: (keybindings: AgentKeybindings) => void;
   setSourceControlKeybindings: (keybindings: SourceControlKeybindings) => void;
+  setSearchKeybindings: (keybindings: SearchKeybindings) => void;
   setEditorSettings: (settings: Partial<EditorSettings>) => void;
   setAgentEnabled: (agentId: string, enabled: boolean) => void;
   setAgentDefault: (agentId: string) => void;
@@ -387,6 +400,7 @@ export const useSettingsStore = create<SettingsState>()(
       mainTabKeybindings: defaultMainTabKeybindings,
       agentKeybindings: defaultAgentKeybindings,
       sourceControlKeybindings: defaultSourceControlKeybindings,
+      searchKeybindings: defaultSearchKeybindings,
       editorSettings: defaultEditorSettings,
       agentSettings: defaultAgentSettings,
       customAgents: [],
@@ -442,6 +456,7 @@ export const useSettingsStore = create<SettingsState>()(
       setMainTabKeybindings: (mainTabKeybindings) => set({ mainTabKeybindings }),
       setAgentKeybindings: (agentKeybindings) => set({ agentKeybindings }),
       setSourceControlKeybindings: (sourceControlKeybindings) => set({ sourceControlKeybindings }),
+      setSearchKeybindings: (searchKeybindings) => set({ searchKeybindings }),
       setEditorSettings: (settings) =>
         set((state) => ({
           editorSettings: { ...state.editorSettings, ...settings },

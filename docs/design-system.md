@@ -162,6 +162,62 @@ className="text-xs"  // 12px, 辅助信息
 </Menu>
 ```
 
+### Icon Buttons (工具栏图标按钮)
+
+用于工具栏、搜索框等场景的小型图标按钮。
+
+**基础样式（无状态）**：
+```tsx
+// 普通图标按钮 - 用于关闭、刷新等操作
+<button
+  className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+>
+  <X className="h-3.5 w-3.5" />
+</button>
+```
+
+**切换按钮（有选中状态）**：
+```tsx
+// 切换按钮 - 用于大小写敏感、正则等开关
+<button
+  className={cn(
+    'flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+    isActive && 'bg-primary/20 text-primary'
+  )}
+>
+  <CaseSensitive className="h-4 w-4" />
+</button>
+```
+
+**带文字的切换按钮**：
+```tsx
+// 模式切换 - 用于 Tab 切换等
+<button
+  className={cn(
+    'flex items-center gap-1 rounded px-2 py-1 text-xs',
+    isActive
+      ? 'bg-primary/20 text-primary'
+      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+  )}
+>
+  <FileCode className="h-3.5 w-3.5" />
+  Content
+</button>
+```
+
+**规则总结**：
+| 状态 | 样式 |
+|------|------|
+| 默认 | `text-muted-foreground` |
+| 悬停 | `hover:bg-accent/50 hover:text-foreground` |
+| 选中 | `bg-primary/20 text-primary` |
+| 尺寸 | `h-6 w-6`（图标按钮）或 `px-2 py-1`（带文字）|
+| 图标 | `h-3.5 w-3.5` 或 `h-4 w-4` |
+
+**注意**：
+- 悬停背景使用 `bg-accent/50`（半透明），不要用 `bg-accent`（太强烈）
+- 选中状态使用 `bg-primary/20 text-primary`（微妙强调），不要用 `bg-accent`
+
 ### Dialog
 
 ```tsx

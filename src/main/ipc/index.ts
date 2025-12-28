@@ -6,6 +6,7 @@ import { registerDialogHandlers } from './dialog';
 import { registerFileHandlers, stopAllFileWatchers } from './files';
 import { clearAllGitServices, registerGitHandlers } from './git';
 import { registerNotificationHandlers } from './notification';
+import { registerSearchHandlers } from './search';
 import { registerSettingsHandlers } from './settings';
 import { registerShellHandlers } from './shell';
 import { destroyAllTerminals, registerTerminalHandlers } from './terminal';
@@ -25,6 +26,7 @@ export function registerIpcHandlers(): void {
   registerSettingsHandlers();
   registerNotificationHandlers();
   registerUpdaterHandlers();
+  registerSearchHandlers();
 }
 
 export async function cleanupAllResources(): Promise<void> {

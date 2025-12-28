@@ -107,6 +107,8 @@ export function KeybindingsSettings() {
     setAgentKeybindings,
     sourceControlKeybindings,
     setSourceControlKeybindings,
+    searchKeybindings,
+    setSearchKeybindings,
   } = useSettingsStore();
   const { t } = useI18n();
 
@@ -151,6 +153,38 @@ export function KeybindingsSettings() {
                 setMainTabKeybindings({
                   ...mainTabKeybindings,
                   switchToTerminal: binding,
+                });
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-medium">{t('Search')}</h3>
+        <p className="text-sm text-muted-foreground mb-4">{t('File search shortcuts')}</p>
+        <div className="space-y-3">
+          <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+            <span className="text-sm">{t('Search files')}</span>
+            <KeybindingInput
+              value={searchKeybindings.searchFiles}
+              onChange={(binding) => {
+                setSearchKeybindings({
+                  ...searchKeybindings,
+                  searchFiles: binding,
+                });
+              }}
+            />
+          </div>
+          <div className="grid grid-cols-[120px_1fr] items-center gap-4">
+            <span className="text-sm">{t('Search content')}</span>
+            <KeybindingInput
+              value={searchKeybindings.searchContent}
+              onChange={(binding) => {
+                setSearchKeybindings({
+                  ...searchKeybindings,
+                  searchContent: binding,
                 });
               }}
             />
