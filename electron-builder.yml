@@ -45,7 +45,7 @@ mac:
   category: public.app-category.developer-tools
   # Disable signing for now (requires Apple Developer account)
   identity: null
-  icon: build/icon.icns
+  icon: build/icon.icon
   # Register enso:// URL scheme
   extendInfo:
     CFBundleURLTypes:
@@ -70,7 +70,6 @@ win:
       arch: [x64]
     - target: portable
       arch: [x64]
-  icon: build/icon.ico
 
 portable:
   artifactName: ${productName}-${version}-portable.exe
@@ -93,7 +92,7 @@ linux:
       arch: [x64]
   maintainer: EnsoAI Team <crolin-zhang@users.noreply.github.com>
   category: Development
-  icon: build/icons
+  icon: build/icon.png
   # Register enso:// URL scheme
   mimeTypes:
     - x-scheme-handler/enso
