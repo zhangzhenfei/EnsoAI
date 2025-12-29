@@ -7,7 +7,8 @@ export type SettingsCategory =
   | 'editor'
   | 'keybindings'
   | 'agent'
-  | 'integration';
+  | 'integration'
+  | 'hapi';
 
 export const fontWeightOptions: { value: FontWeight; label: string }[] = [
   { value: 'normal', label: 'Normal' },

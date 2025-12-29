@@ -10,13 +10,13 @@ const EDGE_THRESHOLD = 20; // pixels from edge
 export interface Session {
   id: string; // UUID, also used for agent --session-id
   name: string;
-  agentId: string; // which agent CLI to use (e.g., 'claude', 'codex', 'gemini', 'codex-wsl')
+  agentId: string; // which agent CLI to use (e.g., 'claude', 'codex', 'gemini', 'codex-wsl', 'claude-hapi', 'claude-happy')
   agentCommand: string; // the CLI command to run (e.g., 'claude', 'codex')
   initialized: boolean; // true after first run, use --resume to restore
   activated?: boolean; // true after user presses Enter, only activated sessions are persisted
   repoPath: string; // repository path this session belongs to
   cwd: string; // worktree path this session belongs to
-  environment?: 'native' | 'wsl'; // execution environment (default: native)
+  environment?: 'native' | 'wsl' | 'hapi' | 'happy'; // execution environment (default: native)
 }
 
 interface SessionBarProps {
@@ -76,29 +76,84 @@ export function SessionBar({
   const dragStart = useRef({ x: 0, y: 0, startX: 0, startY: 0 });
 
   // Get enabled agents from settings
-  const { agentSettings, customAgents } = useSettingsStore();
+  const { agentSettings, customAgents, hapiSettings } = useSettingsStore();
 
-  // Detect installed agents on mount (including WSL variants)
+  // Detect installed agents on mount only (uses cached results from main process)
   useEffect(() => {
-    // Get all enabled agent IDs from settings (includes WSL variants like 'codex-wsl')
+    // Get all enabled agent IDs from settings
     const enabledAgentIds = Object.keys(agentSettings).filter((id) => agentSettings[id]?.enabled);
+    const newInstalled = new Set<string>();
 
-    for (const agentId of enabledAgentIds) {
-      // Find custom agent if this is a custom agent ID
-      const customAgent = customAgents.find((a) => a.id === agentId || `${a.id}-wsl` === agentId);
-
-      window.electronAPI.cli.detectOne(agentId, customAgent).then((result) => {
-        if (result.installed) {
-          setInstalledAgents((prev) => new Set([...prev, agentId]));
+    // Use Promise.all for parallel detection (main process caches results)
+    const detectPromises = enabledAgentIds.map(async (agentId) => {
+      // Handle Hapi agents: they are virtual, based on base CLI installation
+      // On Windows, CLI might be installed in WSL only, so check both native and WSL
+      const isHapi = agentId.endsWith('-hapi');
+      if (isHapi) {
+        if (!hapiSettings.enabled) return;
+        const baseId = agentId.slice(0, -5);
+        const customAgent = customAgents.find((a) => a.id === baseId);
+        // Check native first
+        const nativeResult = await window.electronAPI.cli.detectOne(baseId, customAgent);
+        if (nativeResult.installed) {
+          newInstalled.add(agentId);
+          return;
         }
-      });
-    }
-  }, [agentSettings, customAgents]);
+        // If not installed natively, check WSL (Windows only)
+        const wslResult = await window.electronAPI.cli.detectOne(`${baseId}-wsl`, customAgent);
+        if (wslResult.installed) {
+          newInstalled.add(agentId);
+        }
+        return;
+      }
 
-  // Filter to only enabled AND installed agents (includes WSL variants)
-  const enabledAgents = Object.keys(agentSettings).filter(
-    (id) => agentSettings[id]?.enabled && installedAgents.has(id)
-  );
+      // Handle Happy agents: they are virtual, require happy global installation and base CLI
+      const isHappy = agentId.endsWith('-happy');
+      if (isHappy) {
+        // Check if happy is globally installed first
+        const happyStatus = await window.electronAPI.happy.checkGlobal();
+        if (!happyStatus.installed) return;
+
+        const baseId = agentId.slice(0, -6);
+        const customAgent = customAgents.find((a) => a.id === baseId);
+        // Check native first
+        const nativeResult = await window.electronAPI.cli.detectOne(baseId, customAgent);
+        if (nativeResult.installed) {
+          newInstalled.add(agentId);
+          return;
+        }
+        // If not installed natively, check WSL (Windows only)
+        const wslResult = await window.electronAPI.cli.detectOne(`${baseId}-wsl`, customAgent);
+        if (wslResult.installed) {
+          newInstalled.add(agentId);
+        }
+        return;
+      }
+
+      // Find custom agent if this is a custom agent ID
+      const isWsl = agentId.endsWith('-wsl');
+      const baseId = isWsl ? agentId.slice(0, -4) : agentId;
+      const customAgent = customAgents.find((a) => a.id === baseId);
+
+      const result = await window.electronAPI.cli.detectOne(agentId, customAgent);
+      if (result.installed) {
+        newInstalled.add(agentId);
+      }
+    });
+
+    Promise.all(detectPromises).then(() => {
+      setInstalledAgents(newInstalled);
+    });
+  }, [agentSettings, customAgents, hapiSettings.enabled]);
+
+  // Filter to only enabled AND installed agents (includes WSL/Hapi variants)
+  // For Hapi agents, also check if hapi is still enabled
+  const enabledAgents = Object.keys(agentSettings).filter((id) => {
+    if (!agentSettings[id]?.enabled || !installedAgents.has(id)) return false;
+    // Hapi agents require hapiSettings.enabled
+    if (id.endsWith('-hapi') && !hapiSettings.enabled) return false;
+    return true;
+  });
 
   // Save state
   useEffect(() => {
@@ -209,9 +264,17 @@ export function SessionBar({
 
   const handleSelectAgent = useCallback(
     (agentId: string) => {
-      // Handle WSL agent IDs (e.g., 'codex-wsl' -> base is 'codex')
+      // Handle WSL, Hapi and Happy agent IDs (e.g., 'codex-wsl' -> base is 'codex', 'claude-hapi' -> base is 'claude', 'claude-happy' -> base is 'claude')
       const isWsl = agentId.endsWith('-wsl');
-      const baseId = isWsl ? agentId.slice(0, -4) : agentId;
+      const isHapi = agentId.endsWith('-hapi');
+      const isHappy = agentId.endsWith('-happy');
+      const baseId = isWsl
+        ? agentId.slice(0, -4)
+        : isHapi
+          ? agentId.slice(0, -5)
+          : isHappy
+            ? agentId.slice(0, -6)
+            : agentId;
 
       const customAgent = customAgents.find((a) => a.id === baseId);
       const info = customAgent
@@ -337,10 +400,24 @@ export function SessionBar({
                     </div>
                     {enabledAgents.map((agentId) => {
                       const isWsl = agentId.endsWith('-wsl');
-                      const baseId = isWsl ? agentId.slice(0, -4) : agentId;
+                      const isHapi = agentId.endsWith('-hapi');
+                      const isHappy = agentId.endsWith('-happy');
+                      const baseId = isWsl
+                        ? agentId.slice(0, -4)
+                        : isHapi
+                          ? agentId.slice(0, -5)
+                          : isHappy
+                            ? agentId.slice(0, -6)
+                            : agentId;
                       const customAgent = customAgents.find((a) => a.id === baseId);
                       const baseName = customAgent?.name ?? AGENT_INFO[baseId]?.name ?? baseId;
-                      const name = isWsl ? `${baseName} (WSL)` : baseName;
+                      const name = isWsl
+                        ? `${baseName} (WSL)`
+                        : isHapi
+                          ? `${baseName} (Hapi)`
+                          : isHappy
+                            ? `${baseName} (Happy)`
+                            : baseName;
                       const isDefault = agentSettings[agentId]?.isDefault;
                       return (
                         <button

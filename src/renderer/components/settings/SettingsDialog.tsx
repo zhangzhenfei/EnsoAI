@@ -1,4 +1,4 @@
-import { Bot, FileCode, Keyboard, Link, Palette, Settings } from 'lucide-react';
+import { Bot, FileCode, Keyboard, Link, Palette, Settings, Share2 } from 'lucide-react';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogPopup, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -10,6 +10,7 @@ import { AppearanceSettings } from './AppearanceSettings';
 import type { SettingsCategory } from './constants';
 import { EditorSettings } from './EditorSettings';
 import { GeneralSettings } from './GeneralSettings';
+import { HapiSettings } from './HapiSettings';
 import { IntegrationSettings } from './IntegrationSettings';
 import { KeybindingsSettings } from './KeybindingsSettings';
 
@@ -30,6 +31,7 @@ export function SettingsDialog({ trigger, open, onOpenChange }: SettingsDialogPr
     { id: 'keybindings', icon: Keyboard, label: t('Keybindings') },
     { id: 'agent', icon: Bot, label: t('Agent') },
     { id: 'integration', icon: Link, label: t('Integration') },
+    { id: 'hapi', icon: Share2, label: t('Remote Sharing') },
   ];
 
   // Controlled mode (open prop provided) doesn't need trigger
@@ -67,11 +69,11 @@ export function SettingsDialog({ trigger, open, onOpenChange }: SettingsDialogPr
           }
         />
       )}
-      <DialogPopup className="sm:max-w-2xl" showCloseButton={true}>
+      <DialogPopup className="sm:max-w-4xl" showCloseButton={true}>
         <div className="flex items-center justify-between border-b px-4 py-3">
           <DialogTitle className="text-lg font-medium">{t('Settings')}</DialogTitle>
         </div>
-        <div className="flex h-[500px]">
+        <div className="flex h-[600px]">
           {/* Left: Category List */}
           <nav className="w-48 shrink-0 space-y-1 border-r p-2">
             {categories.map((category) => (
@@ -100,6 +102,7 @@ export function SettingsDialog({ trigger, open, onOpenChange }: SettingsDialogPr
             {activeCategory === 'keybindings' && <KeybindingsSettings />}
             {activeCategory === 'agent' && <AgentSettings />}
             {activeCategory === 'integration' && <IntegrationSettings />}
+            {activeCategory === 'hapi' && <HapiSettings />}
           </div>
         </div>
       </DialogPopup>

@@ -4,7 +4,7 @@ import { electronApp, optimizer } from '@electron-toolkit/utils';
 import { type Locale, normalizeLocale } from '@shared/i18n';
 import { IPC_CHANNELS } from '@shared/types';
 import { app, BrowserWindow, ipcMain, Menu, net, protocol } from 'electron';
-import { cleanupAllResources, registerIpcHandlers } from './ipc';
+import { autoStartHapi, cleanupAllResources, registerIpcHandlers } from './ipc';
 import { registerClaudeBridgeIpcHandlers } from './services/claude/ClaudeIdeBridge';
 import { checkGitInstalled } from './services/git/checkGit';
 import { setCurrentLocale } from './services/i18n';
@@ -180,6 +180,9 @@ app.whenReady().then(async () => {
 
   await init();
 
+  // Auto-start Hapi server if enabled in settings
+  await autoStartHapi();
+
   setCurrentLocale(readStoredLanguage());
 
   mainWindow = createMainWindow();
@@ -223,10 +226,21 @@ app.whenReady().then(async () => {
   });
 });
 
-app.on('window-all-closed', async () => {
-  // Cleanup all resources before quitting
-  await cleanupAllResources();
+app.on('window-all-closed', () => {
   app.quit();
+});
+
+// Cleanup before app quits (covers all quit methods: Cmd+Q, window close, etc.)
+app.on('will-quit', (event) => {
+  event.preventDefault();
+  console.log('[app] Will quit, cleaning up...');
+  cleanupAllResources()
+    .catch((err) => console.error('[app] Cleanup error:', err))
+    .finally(() => {
+      // Remove the listener to allow quit after cleanup
+      app.removeAllListeners('will-quit');
+      app.quit();
+    });
 });
 
 // Handle uncaught errors
@@ -236,4 +250,24 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection:', reason);
+});
+
+// Handle SIGINT (Ctrl+C) and SIGTERM
+// Note: In dev mode with electron, signals may be handled by the parent process
+// Use sync cleanup and immediate exit to ensure process terminates
+process.on('SIGINT', () => {
+  console.log('[app] Received SIGINT, exiting...');
+  cleanupAllResources()
+    .catch((err) => console.error('[app] Cleanup error:', err))
+    .finally(() => process.exit(0));
+  // Force exit after timeout in case cleanup hangs
+  setTimeout(() => process.exit(1), 3000);
+});
+
+process.on('SIGTERM', () => {
+  console.log('[app] Received SIGTERM, exiting...');
+  cleanupAllResources()
+    .catch((err) => console.error('[app] Cleanup error:', err))
+    .finally(() => process.exit(0));
+  setTimeout(() => process.exit(1), 3000);
 });

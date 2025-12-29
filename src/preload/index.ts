@@ -274,7 +274,7 @@ const electronAPI = {
   cli: {
     detect: (
       customAgents?: CustomAgent[],
-      options?: { includeWsl?: boolean }
+      options?: { includeWsl?: boolean; forceRefresh?: boolean }
     ): Promise<AgentCliStatus> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLI_DETECT, customAgents, options),
     detectOne: (agentId: string, customAgent?: CustomAgent): Promise<AgentCliInfo> =>
@@ -401,6 +401,123 @@ const electronAPI = {
     content: (params: ContentSearchParams): Promise<ContentSearchResult> =>
       ipcRenderer.invoke(IPC_CHANNELS.SEARCH_CONTENT, params),
     checkRipgrep: (): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.SEARCH_CHECK_RG),
+  },
+
+  // Hapi Remote Sharing
+  hapi: {
+    checkGlobal: (forceRefresh?: boolean): Promise<{ installed: boolean; version?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.HAPI_CHECK_GLOBAL, forceRefresh),
+    start: (config: {
+      webappPort: number;
+      cliApiToken: string;
+      telegramBotToken: string;
+      webappUrl: string;
+      allowedChatIds: string;
+    }): Promise<{
+      running: boolean;
+      ready?: boolean;
+      pid?: number;
+      port?: number;
+      error?: string;
+    }> => ipcRenderer.invoke(IPC_CHANNELS.HAPI_START, config),
+    stop: (): Promise<{ running: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.HAPI_STOP),
+    restart: (config: {
+      webappPort: number;
+      cliApiToken: string;
+      telegramBotToken: string;
+      webappUrl: string;
+      allowedChatIds: string;
+    }): Promise<{
+      running: boolean;
+      ready?: boolean;
+      pid?: number;
+      port?: number;
+      error?: string;
+    }> => ipcRenderer.invoke(IPC_CHANNELS.HAPI_RESTART, config),
+    getStatus: (): Promise<{
+      running: boolean;
+      ready?: boolean;
+      pid?: number;
+      port?: number;
+      error?: string;
+    }> => ipcRenderer.invoke(IPC_CHANNELS.HAPI_GET_STATUS),
+    onStatusChanged: (
+      callback: (status: {
+        running: boolean;
+        ready?: boolean;
+        pid?: number;
+        port?: number;
+        error?: string;
+      }) => void
+    ): (() => void) => {
+      const handler = (
+        _: unknown,
+        status: { running: boolean; ready?: boolean; pid?: number; port?: number; error?: string }
+      ) => callback(status);
+      ipcRenderer.on(IPC_CHANNELS.HAPI_STATUS_CHANGED, handler);
+      return () => ipcRenderer.off(IPC_CHANNELS.HAPI_STATUS_CHANGED, handler);
+    },
+  },
+
+  // Happy
+  happy: {
+    checkGlobal: (forceRefresh?: boolean): Promise<{ installed: boolean; version?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.HAPPY_CHECK_GLOBAL, forceRefresh),
+  },
+
+  // Cloudflared Tunnel
+  cloudflared: {
+    check: (): Promise<{ installed: boolean; version?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLOUDFLARED_CHECK),
+    install: (): Promise<{ installed: boolean; version?: string; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLOUDFLARED_INSTALL),
+    start: (config: {
+      mode: 'quick' | 'auth';
+      port: number;
+      token?: string;
+    }): Promise<{
+      installed: boolean;
+      version?: string;
+      running: boolean;
+      url?: string;
+      error?: string;
+    }> => ipcRenderer.invoke(IPC_CHANNELS.CLOUDFLARED_START, config),
+    stop: (): Promise<{
+      installed: boolean;
+      version?: string;
+      running: boolean;
+      error?: string;
+    }> => ipcRenderer.invoke(IPC_CHANNELS.CLOUDFLARED_STOP),
+    getStatus: (): Promise<{
+      installed: boolean;
+      version?: string;
+      running: boolean;
+      url?: string;
+      error?: string;
+    }> => ipcRenderer.invoke(IPC_CHANNELS.CLOUDFLARED_GET_STATUS),
+    onStatusChanged: (
+      callback: (status: {
+        installed: boolean;
+        version?: string;
+        running: boolean;
+        url?: string;
+        error?: string;
+      }) => void
+    ): (() => void) => {
+      const handler = (
+        _: unknown,
+        status: {
+          installed: boolean;
+          version?: string;
+          running: boolean;
+          url?: string;
+          error?: string;
+        }
+      ) => callback(status);
+      ipcRenderer.on(IPC_CHANNELS.CLOUDFLARED_STATUS_CHANGED, handler);
+      return () => ipcRenderer.off(IPC_CHANNELS.CLOUDFLARED_STATUS_CHANGED, handler);
+    },
   },
 };
 
