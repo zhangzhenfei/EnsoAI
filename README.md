@@ -58,11 +58,6 @@ scoop install ensoai
 | Linux (AppImage) | `EnsoAI-x.x.x.AppImage` |
 | Linux (deb) | `ensoai_x.x.x_amd64.deb` |
 
-> ⚠️ **macOS 用户注意**：由于应用未签名，首次打开可能提示"已损坏"，请在终端执行：
-> ```bash
-> sudo xattr -dr com.apple.quarantine /Applications/EnsoAI.app
-> ```
-
 #### 从源码构建
 
 ```bash

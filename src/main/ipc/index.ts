@@ -1,5 +1,5 @@
 import { disposeClaudeIdeBridge } from '../services/claude/ClaudeIdeBridge';
-import { registerAgentHandlers, stopAllAgentSessions } from './agent';
+import { registerAgentHandlers } from './agent';
 import { registerAppHandlers } from './app';
 import { registerCliHandlers } from './cli';
 import { registerDialogHandlers } from './dialog';
@@ -32,7 +32,6 @@ export function registerIpcHandlers(): void {
 export async function cleanupAllResources(): Promise<void> {
   // Stop all running processes first (sync, fast)
   destroyAllTerminals();
-  stopAllAgentSessions();
 
   // Stop file watchers with timeout to prevent hanging
   const CLEANUP_TIMEOUT = 3000;

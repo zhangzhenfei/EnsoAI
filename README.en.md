@@ -59,11 +59,6 @@ Download the installer for your platform from [GitHub Releases](https://github.c
 | Linux (AppImage) | `EnsoAI-x.x.x.AppImage` |
 | Linux (deb) | `ensoai_x.x.x_amd64.deb` |
 
-> ⚠️ **macOS Users**: The app is not signed. If you see "damaged" warning, run in terminal:
-> ```bash
-> sudo xattr -dr com.apple.quarantine /Applications/EnsoAI.app
-> ```
-
 #### Build from Source
 
 ```bash

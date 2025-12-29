@@ -88,12 +88,6 @@ jobs:
 
             app "EnsoAI.app"
 
-            postflight do
-              system_command "/usr/bin/xattr",
-                             args: ["-dr", "com.apple.quarantine", "#{appdir}/EnsoAI.app"],
-                             sudo: true
-            end
-
             zap trash: [
               "~/Library/Application Support/EnsoAI",
               "~/Library/Preferences/com.ensoai.app.plist",

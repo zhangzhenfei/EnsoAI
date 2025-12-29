@@ -205,17 +205,6 @@ const electronAPI = {
   // Agent
   agent: {
     list: (): Promise<AgentMetadata[]> => ipcRenderer.invoke(IPC_CHANNELS.AGENT_LIST),
-    start: (agentId: string, workdir: string): Promise<string> =>
-      ipcRenderer.invoke(IPC_CHANNELS.AGENT_START, agentId, workdir),
-    stop: (sessionId: string): Promise<void> =>
-      ipcRenderer.invoke(IPC_CHANNELS.AGENT_STOP, sessionId),
-    send: (sessionId: string, content: string): Promise<void> =>
-      ipcRenderer.invoke(IPC_CHANNELS.AGENT_SEND, sessionId, content),
-    onMessage: (callback: (message: unknown) => void): (() => void) => {
-      const handler = (_: unknown, message: unknown) => callback(message);
-      ipcRenderer.on(IPC_CHANNELS.AGENT_MESSAGE, handler);
-      return () => ipcRenderer.off(IPC_CHANNELS.AGENT_MESSAGE, handler);
-    },
   },
 
   // App

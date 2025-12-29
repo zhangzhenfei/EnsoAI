@@ -9,7 +9,6 @@ import {
 import { ipcMain } from 'electron';
 import { updateClaudeWorkspaceFolders } from '../services/claude/ClaudeIdeBridge';
 import { WorktreeService } from '../services/git/WorktreeService';
-import { agentSessionManager } from './agent';
 import { stopWatchersInDirectory } from './files';
 import { ptyManager } from './terminal';
 
@@ -50,7 +49,6 @@ export function registerWorktreeHandlers(): void {
       // Stop all resources using the worktree directory before removal
       await stopWatchersInDirectory(options.path);
       ptyManager.destroyByWorkdir(options.path);
-      agentSessionManager.stopByWorkdir(options.path);
 
       // Wait for processes to fully terminate
       await new Promise((resolve) => setTimeout(resolve, 1000));

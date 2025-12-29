@@ -60,10 +60,6 @@ export const IPC_CHANNELS = {
 
   // Agent
   AGENT_LIST: 'agent:list',
-  AGENT_START: 'agent:start',
-  AGENT_STOP: 'agent:stop',
-  AGENT_SEND: 'agent:send',
-  AGENT_MESSAGE: 'agent:message',
 
   // App
   APP_GET_PATH: 'app:getPath',
