@@ -14,7 +14,9 @@ import { shellDetector } from '../services/terminal/ShellDetector';
  */
 export function getShellForCommand(): { shell: string; args: string[] } {
   const settings = readSettings();
-  const shellConfig = settings?.shellConfig as ShellConfig | undefined;
+  // zustand stores settings under 'enso-settings.state'
+  const zustandState = (settings?.['enso-settings'] as { state?: Record<string, unknown> })?.state;
+  const shellConfig = zustandState?.shellConfig as ShellConfig | undefined;
 
   if (shellConfig) {
     const { shell, execArgs } = shellDetector.resolveShellForCommand(shellConfig);

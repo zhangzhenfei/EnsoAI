@@ -76,13 +76,27 @@ class CliDetector {
    * Uses user's configured shell from settings.
    */
   private async execInLoginShell(command: string, timeout = 5000): Promise<string> {
-    const escapedCommand = command.replace(/"/g, '\\"');
     const { shell, args } = getShellForCommand();
-    const fullCommand = `"${shell}" ${args.map((a) => `"${a}"`).join(' ')} "${escapedCommand}"`;
-    const { stdout } = await execAsync(fullCommand, {
-      timeout,
-      env: getEnvForCommand(),
-    });
+    const env = getEnvForCommand();
+
+    let fullCommand: string;
+    const shellName = shell.toLowerCase();
+
+    if (shellName.includes('cmd')) {
+      // cmd.exe: don't quote the command, just pass it directly
+      // cmd /c command args
+      fullCommand = `"${shell}" ${args.join(' ')} ${command}`;
+    } else if (shellName.includes('powershell') || shellName.includes('pwsh')) {
+      // PowerShell: use -Command with the command string
+      const escapedCommand = command.replace(/"/g, '\\"');
+      fullCommand = `"${shell}" ${args.map((a) => `"${a}"`).join(' ')} "${escapedCommand}"`;
+    } else {
+      // Unix shells (bash, zsh, etc.): escape quotes and wrap in quotes
+      const escapedCommand = command.replace(/"/g, '\\"');
+      fullCommand = `"${shell}" ${args.map((a) => `"${a}"`).join(' ')} "${escapedCommand}"`;
+    }
+
+    const { stdout } = await execAsync(fullCommand, { timeout, env });
     return stdout;
   }
 
