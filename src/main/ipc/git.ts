@@ -294,33 +294,37 @@ ${truncatedDiff}`;
           }
 
           try {
-            // stdout 可能包含 ANSI 转义码或额外日志，提取 JSON 行
+            // 清理 ANSI 转义码（与 StreamJsonParser 保持一致）
             // biome-ignore lint/complexity/useRegexLiterals: Using RegExp constructor to avoid control character lint error
             const ansiRegex = new RegExp(
               '[\\u001b\\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]',
               'g'
             );
             let jsonStr = stdout.replace(ansiRegex, '').trim();
-            const lines = jsonStr.split('\n');
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-                jsonStr = trimmed;
-                break;
-              }
+
+            // 尝试找到第一个完整的 JSON 对象
+            const jsonStart = jsonStr.indexOf('{');
+            const jsonEnd = jsonStr.lastIndexOf('}');
+
+            if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+              jsonStr = jsonStr.slice(jsonStart, jsonEnd + 1);
             }
 
             const result = JSON.parse(jsonStr);
+
+            console.log('[GenerateCommitMsg] Parsed result:', JSON.stringify(result, null, 2));
+
             if (result.type === 'result' && result.subtype === 'success' && result.result) {
               resolve({ success: true, message: result.result });
             } else {
+              console.error('[GenerateCommitMsg] Unexpected result format:', result);
               resolve({
                 success: false,
                 error: result.error || 'Unknown error',
               });
             }
           } catch (err) {
-            console.error('[GenerateCommitMsg] Failed to parse stdout:', JSON.stringify(stdout));
+            console.error('[GenerateCommitMsg] Failed to parse stdout:', stdout);
             console.error('[GenerateCommitMsg] Parse error:', err);
             console.error('[GenerateCommitMsg] stderr:', stderr);
             resolve({ success: false, error: 'Failed to parse response' });

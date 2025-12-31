@@ -202,6 +202,72 @@ export function useXterm({
     terminalRef.current?.clear();
   }, []);
 
+  const loadRenderer = useCallback((terminal: Terminal, renderer: typeof terminalRenderer) => {
+    // Dispose current renderer addon
+    rendererAddonRef.current?.dispose();
+    rendererAddonRef.current = null;
+
+    // Load renderer based on settings (webgl > canvas > dom)
+    if (renderer === 'webgl') {
+      try {
+        const webglAddon = new WebglAddon();
+        webglAddon.onContextLoss(() => {
+          // Guard against disposed terminal
+          if (terminalRef.current && rendererAddonRef.current === webglAddon) {
+            console.warn('[xterm] WebGL context lost, falling back to canvas');
+            webglAddon.dispose();
+            try {
+              const canvasAddon = new CanvasAddon();
+              terminalRef.current.loadAddon(canvasAddon);
+              rendererAddonRef.current = canvasAddon;
+            } catch (e) {
+              console.warn('[xterm] Failed to fallback to canvas:', e);
+              // Fallback to DOM renderer (no addon)
+              rendererAddonRef.current = null;
+            }
+          }
+        });
+        terminal.loadAddon(webglAddon);
+        rendererAddonRef.current = webglAddon;
+
+        // Fix for WebGL ghosting/corruption: clear texture atlas on resize
+        // This helps when the texture atlas gets fragmented over time
+        terminal.onResize(() => {
+          try {
+            // Use ref to support hot-swapping: only clear if current renderer is WebGL
+            const currentAddon = rendererAddonRef.current;
+            if (currentAddon && 'clearTextureAtlas' in currentAddon) {
+              (currentAddon as WebglAddon).clearTextureAtlas();
+            }
+          } catch {
+            // Ignore errors if addon is disposed
+          }
+        });
+      } catch (error) {
+        console.warn('[xterm] WebGL failed, falling back to canvas:', error);
+        try {
+          const canvasAddon = new CanvasAddon();
+          terminal.loadAddon(canvasAddon);
+          rendererAddonRef.current = canvasAddon;
+        } catch {
+          // DOM renderer is the default fallback
+        }
+      }
+    } else if (renderer === 'canvas') {
+      try {
+        const canvasAddon = new CanvasAddon();
+        terminal.loadAddon(canvasAddon);
+        rendererAddonRef.current = canvasAddon;
+      } catch (error) {
+        console.warn('[xterm] Canvas failed, using DOM renderer:', error);
+      }
+    }
+    // 'dom' uses the default renderer, no addon needed
+
+    // Trigger refresh to ensure render
+    terminal.refresh(0, terminal.rows - 1);
+  }, []);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: settings excluded - updated via separate effect
   const initTerminal = useCallback(async () => {
     if (!containerRef.current || terminalRef.current) return;
@@ -219,7 +285,7 @@ export function useXterm({
       scrollback: settings.scrollback,
       allowProposedApi: true,
       allowTransparency: false,
-      rescaleOverlappingGlyphs: true,
+      rescaleOverlappingGlyphs: false,
     });
 
     const fitAddon = new FitAddon();
@@ -243,38 +309,8 @@ export function useXterm({
       onTitleChangeRef.current?.(title);
     });
 
-    // Load renderer based on settings (webgl > canvas > dom)
-    if (terminalRenderer === 'webgl') {
-      try {
-        const webglAddon = new WebglAddon();
-        webglAddon.onContextLoss(() => {
-          // Guard against disposed terminal
-          if (terminalRef.current && rendererAddonRef.current === webglAddon) {
-            webglAddon.dispose();
-          }
-        });
-        terminal.loadAddon(webglAddon);
-        rendererAddonRef.current = webglAddon;
-      } catch (error) {
-        console.warn('[xterm] WebGL failed, falling back to canvas:', error);
-        try {
-          const canvasAddon = new CanvasAddon();
-          terminal.loadAddon(canvasAddon);
-          rendererAddonRef.current = canvasAddon;
-        } catch {
-          // DOM renderer is the default fallback
-        }
-      }
-    } else if (terminalRenderer === 'canvas') {
-      try {
-        const canvasAddon = new CanvasAddon();
-        terminal.loadAddon(canvasAddon);
-        rendererAddonRef.current = canvasAddon;
-      } catch (error) {
-        console.warn('[xterm] Canvas failed, using DOM renderer:', error);
-      }
-    }
-    // 'dom' uses the default renderer, no addon needed
+    // Load renderer
+    loadRenderer(terminal, terminalRenderer);
 
     // Register file path link provider for click-to-open-in-editor
     const linkProviderDisposable = terminal.registerLinkProvider({
@@ -533,6 +569,13 @@ export function useXterm({
     }
   }, [isActive, initTerminal]);
 
+  // Handle dynamic renderer switching
+  useEffect(() => {
+    if (terminalRef.current) {
+      loadRenderer(terminalRef.current, terminalRenderer);
+    }
+  }, [terminalRenderer, loadRenderer]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -649,6 +692,36 @@ export function useXterm({
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [isActive, fit]);
+
+  // Silent Reset: Proactively clear texture atlas every 30 mins to prevent long-term fragmentation
+  useEffect(() => {
+    if (!isActive) return;
+
+    const preventGlitchInterval = setInterval(
+      () => {
+        const addon = rendererAddonRef.current;
+        if (
+          terminalRenderer === 'webgl' &&
+          terminalRef.current &&
+          addon &&
+          'clearTextureAtlas' in addon &&
+          !document.hidden
+        ) {
+          requestAnimationFrame(() => {
+            try {
+              (addon as WebglAddon).clearTextureAtlas();
+              terminalRef.current?.refresh(0, terminalRef.current.rows - 1);
+            } catch {
+              // Ignore errors if addon is disposed or method missing
+            }
+          });
+        }
+      },
+      1000 * 60 * 30
+    ); // 30 minutes
+
+    return () => clearInterval(preventGlitchInterval);
+  }, [isActive, terminalRenderer]);
 
   return {
     containerRef,
