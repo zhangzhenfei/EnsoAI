@@ -470,8 +470,8 @@ export default function App() {
         return;
       }
 
-      // Extract repo name from path
-      const name = selectedPath.split('/').pop() || selectedPath;
+      // Extract repo name from path (handle both / and \ for Windows compatibility)
+      const name = selectedPath.split(/[\\/]/).pop() || selectedPath;
 
       const newRepo: Repository = {
         name,
@@ -706,7 +706,7 @@ export default function App() {
                   worktrees={sortedWorktrees}
                   activeWorktree={activeWorktree}
                   branches={branches}
-                  projectName={selectedRepo?.split('/').pop() || ''}
+                  projectName={selectedRepo?.split(/[\\/]/).pop() || ''}
                   isLoading={worktreesLoading}
                   isCreating={createWorktreeMutation.isPending}
                   error={worktreeError}
