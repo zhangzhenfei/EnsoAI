@@ -658,26 +658,11 @@ export function TerminalPanel({ cwd, isActive = false }: TerminalPanelProps) {
 
   const normalizedCwd = normalizePath(cwd);
 
-  // Check if there are any terminals across all worktrees
-  const hasAnyTerminals = Object.keys(worktreeStates).length > 0;
+  // Check if current worktree has any terminals (not all worktrees)
+  const hasCurrentWorktreeTerminals = groups.length > 0;
 
-  if (!hasAnyTerminals) {
-    return (
-      <Empty className="h-full border-0">
-        <EmptyMedia variant="icon">
-          <Terminal className="h-4.5 w-4.5" />
-        </EmptyMedia>
-        <EmptyHeader>
-          <EmptyTitle>{t('No terminals open')}</EmptyTitle>
-          <EmptyDescription>{t('Create a terminal to start working')}</EmptyDescription>
-        </EmptyHeader>
-        <Button variant="outline" size="sm" onClick={handleNewTerminal}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t('New Terminal')}
-        </Button>
-      </Empty>
-    );
-  }
+  // Show empty state for current worktree (use overlay, not early return)
+  const showEmptyState = !hasCurrentWorktreeTerminals;
 
   // Helper to find tab info
   const findTabInfo = (tabId: string) => {
@@ -706,6 +691,25 @@ export function TerminalPanel({ cwd, isActive = false }: TerminalPanelProps) {
 
   return (
     <div className="relative h-full w-full">
+      {/* Empty state overlay - shown when current worktree has no terminals */}
+      {/* IMPORTANT: Don't use early return here - terminals must stay mounted to prevent PTY destruction */}
+      {showEmptyState && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-background">
+          <Empty className="border-0">
+            <EmptyMedia variant="icon">
+              <Terminal className="h-4.5 w-4.5" />
+            </EmptyMedia>
+            <EmptyHeader>
+              <EmptyTitle>{t('No terminals open')}</EmptyTitle>
+              <EmptyDescription>{t('Create a terminal to start working')}</EmptyDescription>
+            </EmptyHeader>
+            <Button variant="outline" size="sm" onClick={handleNewTerminal}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('New Terminal')}
+            </Button>
+          </Empty>
+        </div>
+      )}
       {/* Render all worktrees' group structures (tab bars only) */}
       {Object.entries(worktreeStates).map(([worktreePath, state]) => {
         const isCurrentWorktree = worktreePath === normalizedCwd;
