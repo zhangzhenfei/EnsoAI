@@ -4,7 +4,12 @@ import { electronApp, optimizer } from '@electron-toolkit/utils';
 import { type Locale, normalizeLocale } from '@shared/i18n';
 import { IPC_CHANNELS } from '@shared/types';
 import { app, BrowserWindow, ipcMain, Menu, net, protocol } from 'electron';
-import { autoStartHapi, cleanupAllResources, registerIpcHandlers } from './ipc';
+import {
+  autoStartHapi,
+  cleanupAllResources,
+  cleanupAllResourcesSync,
+  registerIpcHandlers,
+} from './ipc';
 import { registerClaudeBridgeIpcHandlers } from './services/claude/ClaudeIdeBridge';
 import { checkGitInstalled } from './services/git/checkGit';
 import { setCurrentLocale } from './services/i18n';
@@ -253,21 +258,16 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // Handle SIGINT (Ctrl+C) and SIGTERM
-// Note: In dev mode with electron, signals may be handled by the parent process
-// Use sync cleanup and immediate exit to ensure process terminates
-process.on('SIGINT', () => {
-  console.log('[app] Received SIGINT, exiting...');
-  cleanupAllResources()
-    .catch((err) => console.error('[app] Cleanup error:', err))
-    .finally(() => process.exit(0));
-  // Force exit after timeout in case cleanup hangs
-  setTimeout(() => process.exit(1), 3000);
-});
+// In dev mode, electron-vite may exit before we finish cleanup.
+// Use synchronous cleanup + immediate app.exit() to ensure clean shutdown.
+function handleShutdownSignal(signal: string): void {
+  console.log(`[app] Received ${signal}, exiting...`);
+  // Sync cleanup: kill child processes immediately
+  cleanupAllResourcesSync();
+  // Use app.exit() to bypass will-quit handler (already cleaned up)
+  app.exit(0);
+}
 
-process.on('SIGTERM', () => {
-  console.log('[app] Received SIGTERM, exiting...');
-  cleanupAllResources()
-    .catch((err) => console.error('[app] Cleanup error:', err))
-    .finally(() => process.exit(0));
-  setTimeout(() => process.exit(1), 3000);
-});
+process.on('SIGINT', () => handleShutdownSignal('SIGINT'));
+process.on('SIGTERM', () => handleShutdownSignal('SIGTERM'));
+process.on('SIGHUP', () => handleShutdownSignal('SIGHUP'));

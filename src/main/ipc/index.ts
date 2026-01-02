@@ -3,7 +3,7 @@ import { registerAgentHandlers } from './agent';
 import { registerAppHandlers } from './app';
 import { registerCliHandlers } from './cli';
 import { registerDialogHandlers } from './dialog';
-import { registerFileHandlers, stopAllFileWatchers } from './files';
+import { registerFileHandlers, stopAllFileWatchers, stopAllFileWatchersSync } from './files';
 import { clearAllGitServices, registerGitHandlers } from './git';
 import { autoStartHapi, cleanupHapi, registerHapiHandlers } from './hapi';
 
@@ -77,4 +77,31 @@ export async function cleanupAllResources(): Promise<void> {
 
   // Dispose Claude IDE Bridge
   disposeClaudeIdeBridge();
+}
+
+/**
+ * Synchronous cleanup for signal handlers (SIGINT/SIGTERM).
+ * Kills child processes immediately without waiting for graceful shutdown.
+ * This ensures clean exit when electron-vite terminates quickly.
+ */
+export function cleanupAllResourcesSync(): void {
+  console.log('[app] Sync cleanup starting...');
+
+  // Kill Hapi/Cloudflared processes (sync)
+  cleanupHapi();
+
+  // Kill all PTY sessions immediately (sync)
+  destroyAllTerminals();
+
+  // Stop file watchers (sync)
+  stopAllFileWatchersSync();
+
+  // Clear service caches (sync)
+  clearAllGitServices();
+  clearAllWorktreeServices();
+
+  // Dispose Claude IDE Bridge (sync)
+  disposeClaudeIdeBridge();
+
+  console.log('[app] Sync cleanup done');
 }

@@ -152,3 +152,14 @@ export async function stopAllFileWatchers(): Promise<void> {
   await Promise.all(stopPromises);
   watchers.clear();
 }
+
+/**
+ * Synchronous version for signal handlers.
+ * Fires unsubscribe without waiting - process will exit anyway.
+ */
+export function stopAllFileWatchersSync(): void {
+  for (const watcher of watchers.values()) {
+    watcher.stop().catch(() => {});
+  }
+  watchers.clear();
+}
