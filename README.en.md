@@ -24,6 +24,11 @@
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
 
+<p align="center">
+  <a href="https://t.me/EnsoAI_news"><img src="https://img.shields.io/badge/Updates-Telegram-26A5E4?logo=telegram&logoColor=white" alt="Telegram Channel" /></a>
+  <a href="https://t.me/EnsoAi_Offical"><img src="https://img.shields.io/badge/Community-Telegram-26A5E4?logo=telegram&logoColor=white" alt="Telegram Group" /></a>
+</p>
+
 ---
 
 ## Workflow, Reimagined.
