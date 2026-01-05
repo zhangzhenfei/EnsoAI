@@ -527,7 +527,12 @@ export function AgentTerminal({
       style={{ backgroundColor: settings.theme.background, contain: 'strict' }}
       onClick={handleClick}
     >
-      <div ref={containerRef} className="h-full w-full px-[5px] py-[2px]" />
+      {/* boxSizing: content-box fixes FitAddon calculation with padding (xterm.js#1283) */}
+      <div
+        ref={containerRef}
+        className="h-full w-full px-[5px] py-[2px]"
+        style={{ boxSizing: 'content-box' }}
+      />
       <TerminalSearchBar
         ref={searchBarRef}
         isOpen={isSearchOpen}
