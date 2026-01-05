@@ -819,6 +819,45 @@ export const zhTranslations: Record<string, string> = {
   'Create or edit a prompt preset for CLAUDE.md': '创建或编辑 CLAUDE.md 提示词预设',
   'Default Prompt': '默认提示词',
   'This content will be written to ~/.claude/CLAUDE.md': '此内容将写入 ~/.claude/CLAUDE.md',
+  // AddRepositoryDialog
+  'Add a local Git repository or clone from a remote URL.': '添加本地 Git 仓库或从远程 URL 克隆',
+  Local: '本地',
+  Remote: '远程',
+  'Repository directory': '仓库目录',
+  'Select a local Git repository...': '选择本地 Git 仓库...',
+  Browse: '浏览',
+  'Select an existing Git repository on your computer.': '选择计算机上已有的 Git 仓库',
+  'Repository URL': '仓库 URL',
+  'Supports HTTPS and SSH protocols.': '支持 HTTPS 和 SSH 协议',
+  'Invalid URL format': 'URL 格式无效',
+  'Valid URL': 'URL 有效',
+  'Select a directory...': '选择目录...',
+  'Repository name': '仓库名称',
+  'Repository folder name': '仓库文件夹名',
+  'The folder name for the cloned repository.': '克隆仓库的文件夹名称',
+  'Full path': '完整路径',
+  Clone: '克隆',
+  'Cloning...': '克隆中...',
+  'Clone failed': '克隆失败',
+  'Failed to select directory': '选择目录失败',
+  'Please select a local repository directory': '请选择本地仓库目录',
+  'Please enter a valid Git URL': '请输入有效的 Git URL',
+  'Please select a save location': '请选择保存位置',
+  'Please enter a repository name': '请输入仓库名称',
+  'Counting objects...': '正在计算对象...',
+  'Compressing objects...': '正在压缩对象...',
+  'Receiving objects...': '正在接收对象...',
+  'Resolving deltas...': '正在解析增量...',
+  'Target directory already exists. Please choose a different location or rename the repository.':
+    '目标目录已存在，请选择其他位置或重命名仓库',
+  'Authentication failed. Please check your system credentials.': '认证失败，请检查系统凭据',
+  'SSH authentication failed. Please check your SSH key configuration.':
+    'SSH 认证失败，请检查 SSH 密钥配置',
+  'Remote repository not found. Please check the URL.': '远程仓库不存在，请检查 URL',
+  'Unable to connect to remote repository. Please check your network.':
+    '无法连接到远程仓库，请检查网络',
+  'Invalid Git URL format. Please enter a valid HTTPS or SSH URL.':
+    'Git URL 格式无效，请输入有效的 HTTPS 或 SSH URL',
 };
 
 export function normalizeLocale(input?: string): Locale {
