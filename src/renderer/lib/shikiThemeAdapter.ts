@@ -137,5 +137,46 @@ function adjustAlpha(hex: string, alpha: number): string {
 
 export function getShikiThemeFallback(terminalThemeName: string): string {
   const isDark = isTerminalThemeDark(terminalThemeName);
+  const lowerName = terminalThemeName.toLowerCase();
+
+  if (lowerName.includes('dracula')) return 'dracula';
+  if (lowerName.includes('monokai')) return 'monokai';
+  if (lowerName.includes('nord')) return 'nord';
+  if (lowerName.includes('solarized')) return isDark ? 'solarized-dark' : 'solarized-light';
+  if (lowerName.includes('gruvbox')) return isDark ? 'dark-plus' : 'light-plus';
+  if (lowerName.includes('one') && lowerName.includes('dark')) return 'one-dark-pro';
+  if (lowerName.includes('tokyo') && lowerName.includes('night')) return 'tokyo-night';
+  if (lowerName.includes('catppuccin')) {
+    if (lowerName.includes('latte')) return 'catppuccin-latte';
+    if (lowerName.includes('frappe')) return 'catppuccin-frappe';
+    if (lowerName.includes('macchiato')) return 'catppuccin-macchiato';
+    if (lowerName.includes('mocha')) return 'catppuccin-mocha';
+    return isDark ? 'catppuccin-mocha' : 'catppuccin-latte';
+  }
+  if (lowerName.includes('github')) return isDark ? 'github-dark' : 'github-light';
+  if (lowerName.includes('ayu')) return isDark ? 'ayu-dark' : 'min-light';
+  if (lowerName.includes('rose') && lowerName.includes('pine')) {
+    if (lowerName.includes('dawn')) return 'rose-pine-dawn';
+    if (lowerName.includes('moon')) return 'rose-pine-moon';
+    return 'rose-pine';
+  }
+  if (lowerName.includes('material')) {
+    if (lowerName.includes('ocean')) return 'material-theme-ocean';
+    if (lowerName.includes('palenight')) return 'material-theme-palenight';
+    if (lowerName.includes('lighter')) return 'material-theme-lighter';
+    return 'material-theme';
+  }
+  if (lowerName.includes('night') && lowerName.includes('owl')) return 'night-owl';
+  if (lowerName.includes('vitesse')) return isDark ? 'vitesse-dark' : 'vitesse-light';
+  if (lowerName.includes('slack')) return isDark ? 'slack-dark' : 'slack-ochin';
+  if (lowerName.includes('vesper')) return 'vesper';
+  if (lowerName.includes('poimandres')) return 'poimandres';
+  if (lowerName.includes('houston')) return 'houston';
+  if (lowerName.includes('laserwave')) return 'laserwave';
+  if (lowerName.includes('everforest')) return isDark ? 'everforest-dark' : 'everforest-light';
+  if (lowerName.includes('kanagawa')) return isDark ? 'kanagawa-dragon' : 'kanagawa-lotus';
+  if (lowerName.includes('andromeeda')) return 'andromeeda';
+  if (lowerName.includes('aurora')) return 'aurora-x';
+
   return isDark ? 'github-dark' : 'github-light';
 }

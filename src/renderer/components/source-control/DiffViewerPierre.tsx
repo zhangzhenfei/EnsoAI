@@ -11,7 +11,9 @@ import {
 } from '@/components/ui/empty';
 import { useFileDiff } from '@/hooks/useSourceControl';
 import { useI18n } from '@/i18n';
+import { isTerminalThemeDark } from '@/lib/ghosttyTheme';
 import { matchesKeybinding } from '@/lib/keybinding';
+import { getShikiThemeFallback } from '@/lib/shikiThemeAdapter';
 import { cn } from '@/lib/utils';
 import { useNavigationStore } from '@/stores/navigation';
 import { useSettingsStore } from '@/stores/settings';
@@ -74,7 +76,7 @@ export function DiffViewerPierre({
   isCommitView = false,
 }: DiffViewerPierreProps) {
   const { t } = useI18n();
-  const { editorSettings, sourceControlKeybindings } = useSettingsStore();
+  const { editorSettings, sourceControlKeybindings, terminalTheme } = useSettingsStore();
   const { navigationDirection, setNavigationDirection } = useSourceControlStore();
   const navigateToFile = useNavigationStore((s) => s.navigateToFile);
 
@@ -409,6 +411,8 @@ export function DiffViewerPierre({
             diffStyle: layout,
             disableLineNumbers: editorSettings.lineNumbers === 'off',
             overflow: editorSettings.wordWrap === 'on' ? 'wrap' : 'scroll',
+            theme: getShikiThemeFallback(terminalTheme),
+            themeType: isTerminalThemeDark(terminalTheme) ? 'dark' : 'light',
           }}
           style={{
             fontFamily: editorSettings.fontFamily,
