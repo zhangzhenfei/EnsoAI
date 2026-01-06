@@ -159,7 +159,6 @@ export const IPC_CHANNELS = {
   // Search
   SEARCH_FILES: 'search:files',
   SEARCH_CONTENT: 'search:content',
-  SEARCH_CHECK_RG: 'search:checkRg',
 
   // Hapi Remote Sharing
   HAPI_CHECK_GLOBAL: 'hapi:checkGlobal',

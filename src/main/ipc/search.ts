@@ -13,8 +13,4 @@ export function registerSearchHandlers(): void {
     const results = await searchService.searchContent(params);
     return results;
   });
-
-  ipcMain.handle(IPC_CHANNELS.SEARCH_CHECK_RG, () => {
-    return searchService.checkRipgrep();
-  });
 }

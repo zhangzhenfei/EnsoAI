@@ -1,7 +1,6 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import type { ContentSearchMatch, FileSearchResult } from '@shared/types';
 import {
-  AlertTriangle,
   CaseSensitive,
   FileCode,
   FileText,
@@ -36,14 +35,7 @@ export function GlobalSearchDialog({
 }: GlobalSearchDialogProps) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [dividerY, setDividerY] = useState(50); // percentage
-  const [hasRipgrep, setHasRipgrep] = useState<boolean | null>(null);
-  const [showRgWarning, setShowRgWarning] = useState(true);
-
-  // Check ripgrep availability on mount
-  useEffect(() => {
-    window.electronAPI.search.checkRipgrep().then(setHasRipgrep);
-  }, []);
+  const [dividerY, setDividerY] = useState(50);
 
   const {
     mode,
@@ -282,32 +274,6 @@ export function GlobalSearchDialog({
                 )}
               </div>
             </div>
-
-            {/* Ripgrep Warning */}
-            {hasRipgrep === false && showRgWarning && mode === 'content' && (
-              <div className="flex shrink-0 items-center gap-2 border-b border-warning/32 bg-warning/4 px-3 py-1.5 text-xs text-foreground">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning" />
-                <span className="min-w-0 flex-1">
-                  {t('For better performance, install')}{' '}
-                  <button
-                    type="button"
-                    className="text-primary underline hover:text-primary/80"
-                    onClick={() =>
-                      window.electronAPI.shell.openExternal('https://github.com/BurntSushi/ripgrep')
-                    }
-                  >
-                    ripgrep
-                  </button>
-                </span>
-                <button
-                  type="button"
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                  onClick={() => setShowRgWarning(false)}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
 
             {/* Results Area */}
             <div className="flex min-h-0 flex-1 flex-col">
