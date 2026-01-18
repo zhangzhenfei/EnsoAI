@@ -592,7 +592,8 @@ export function TreeSidebar({
                           }
                         }}
                         className={cn(
-                          'group relative flex w-full flex-col gap-1 rounded-xl px-2 py-2 text-left cursor-pointer',
+                          'group relative flex w-full flex-col gap-1 rounded-lg px-2 py-2 text-left transition-colors cursor-pointer',
+                          isSelected ? 'text-accent-foreground' : 'hover:bg-accent/30',
                           draggedRepoIndexRef.current === index && 'opacity-50'
                         )}
                       >
@@ -600,7 +601,7 @@ export function TreeSidebar({
                         {isSelected && (
                           <motion.div
                             layoutId="repo-highlight"
-                            className="absolute inset-0 rounded-xl bg-accent/60 shadow-[0_2px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.04)]"
+                            className="absolute inset-0 rounded-lg bg-accent/50"
                             transition={springFast}
                           />
                         )}
@@ -616,25 +617,16 @@ export function TreeSidebar({
                           </span>
                           <FolderGit2
                             className={cn(
-                              'h-4 w-4 shrink-0 transition-colors duration-200',
-                              isSelected
-                                ? 'text-primary'
-                                : 'text-muted-foreground group-hover:text-foreground'
+                              'h-4 w-4 shrink-0',
+                              isSelected ? 'text-accent-foreground' : 'text-muted-foreground'
                             )}
                           />
-                          <span
-                            className={cn(
-                              'min-w-0 flex-1 truncate font-medium text-sm text-left transition-colors duration-200',
-                              isSelected
-                                ? 'text-foreground'
-                                : 'text-muted-foreground group-hover:text-foreground'
-                            )}
-                          >
+                          <span className="min-w-0 flex-1 truncate font-medium text-sm text-left">
                             {repo.name}
                           </span>
                           <button
                             type="button"
-                            className="shrink-0 p-1 rounded hover:bg-muted/50"
+                            className="shrink-0 p-1 rounded hover:bg-muted"
                             onClick={(e) => {
                               e.stopPropagation();
                               setRepoSettingsTarget(repo);
@@ -736,6 +728,7 @@ export function TreeSidebar({
                               <WorktreeTreeItem
                                 key={worktree.path}
                                 worktree={worktree}
+                                repoPath={repo.path}
                                 isActive={activeWorktree?.path === worktree.path}
                                 onClick={() => {
                                   // Select repo if not already selected
@@ -1062,6 +1055,7 @@ export function TreeSidebar({
 // Worktree item for tree view
 interface WorktreeTreeItemProps {
   worktree: GitWorktree;
+  repoPath: string;
   isActive: boolean;
   onClick: () => void;
   onDelete: () => void;
@@ -1078,6 +1072,7 @@ interface WorktreeTreeItemProps {
 
 function WorktreeTreeItem({
   worktree,
+  repoPath,
   isActive,
   onClick,
   onDelete,
@@ -1183,45 +1178,43 @@ function WorktreeTreeItem({
         onClick={onClick}
         onContextMenu={handleContextMenu}
         className={cn(
-          'group relative flex w-full items-center gap-2 rounded-xl pl-5 pr-2 py-2 text-left text-sm',
-          'transition-all duration-200 ease-out',
-          isActive
-            ? 'bg-accent/60 shadow-[0_2px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.04)]'
-            : 'bg-transparent shadow-none hover:bg-accent/30',
-          isPrunable && 'opacity-50'
+          'relative flex w-full items-center gap-2 rounded-lg pl-5 pr-2 py-1.5 text-left transition-colors text-sm',
+          isPrunable && 'opacity-50',
+          isActive ? 'text-accent-foreground' : 'hover:bg-accent/50'
         )}
       >
+        {isActive && (
+          <motion.div
+            layoutId={`worktree-highlight-${repoPath}`}
+            className="absolute inset-0 rounded-lg bg-accent"
+            transition={springFast}
+          />
+        )}
         <GitBranch
           className={cn(
-            'h-3.5 w-3.5 shrink-0 transition-colors duration-200',
+            'relative z-10 h-3.5 w-3.5 shrink-0',
             isPrunable
               ? 'text-destructive'
               : isActive
-                ? 'text-primary'
-                : 'text-muted-foreground group-hover:text-foreground'
+                ? 'text-accent-foreground'
+                : 'text-muted-foreground'
           )}
         />
-        <span
-          className={cn(
-            'min-w-0 flex-1 truncate transition-colors duration-200',
-            isPrunable && 'line-through',
-            isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
-          )}
-        >
+        <span className={cn('relative z-10 min-w-0 flex-1 truncate', isPrunable && 'line-through')}>
           {branchDisplay}
         </span>
         {isPrunable ? (
-          <span className="shrink-0 rounded bg-destructive/20 px-1 py-0.5 text-[9px] font-medium uppercase text-destructive">
+          <span className="relative z-10 shrink-0 rounded bg-destructive/20 px-1 py-0.5 text-[9px] font-medium uppercase text-destructive">
             {t('Deleted')}
           </span>
         ) : isMain ? (
-          <span className="shrink-0 rounded bg-emerald-500/20 px-1 py-0.5 text-[9px] font-medium uppercase text-emerald-600 dark:text-emerald-400">
+          <span className="relative z-10 shrink-0 rounded bg-emerald-500/20 px-1 py-0.5 text-[9px] font-medium uppercase text-emerald-600 dark:text-emerald-400">
             {t('Main')}
           </span>
         ) : null}
         {/* Activity counts and diff stats */}
         {hasActivity && (
-          <div className="flex items-center gap-1.5 shrink-0 text-[10px] text-muted-foreground">
+          <div className="relative z-10 flex items-center gap-1.5 shrink-0 text-[10px] text-muted-foreground">
             {activity.agentCount > 0 && (
               <span className="flex items-center gap-0.5">
                 <Sparkles className="h-3 w-3" />

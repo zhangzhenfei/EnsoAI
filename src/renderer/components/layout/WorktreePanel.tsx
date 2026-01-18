@@ -1,4 +1,5 @@
 import type { GitBranch as GitBranchType, GitWorktree, WorktreeCreateOptions } from '@shared/types';
+import { LayoutGroup, motion } from 'framer-motion';
 import {
   Copy,
   FolderOpen,
@@ -31,13 +32,14 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import { toastManager } from '@/components/ui/toast';
 import { GlowBorder, type GlowState, useGlowEffectEnabled } from '@/components/ui/glow-card';
+import { toastManager } from '@/components/ui/toast';
 import { CreateWorktreeDialog } from '@/components/worktree/CreateWorktreeDialog';
+import { useWorktreeOutputState } from '@/hooks/useOutputState';
 import { useI18n } from '@/i18n';
+import { springFast } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { useWorktreeActivityStore } from '@/stores/worktreeActivity';
-import { useWorktreeOutputState } from '@/hooks/useOutputState';
 
 interface WorktreePanelProps {
   worktrees: GitWorktree[];
@@ -334,32 +336,34 @@ export function WorktreePanel({
             )}
           </Empty>
         ) : (
-          <div className="space-y-1">
-            {filteredWorktreesWithIndex.map(({ worktree, originalIndex }) => (
-              <WorktreeItem
-                key={worktree.path}
-                worktree={worktree}
-                isActive={activeWorktree?.path === worktree.path}
-                onClick={() => onSelectWorktree(worktree)}
-                onDelete={() => setWorktreeToDelete(worktree)}
-                onMerge={onMergeWorktree ? () => onMergeWorktree(worktree) : undefined}
-                draggable={!searchQuery && !!onReorderWorktrees}
-                onDragStart={(e) => handleDragStart(e, originalIndex, worktree)}
-                onDragEnd={handleDragEnd}
-                onDragOver={(e) => handleDragOver(e, originalIndex)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, originalIndex)}
-                showDropIndicator={dropTargetIndex === originalIndex}
-                dropDirection={
-                  dropTargetIndex === originalIndex && draggedIndexRef.current !== null
-                    ? draggedIndexRef.current > originalIndex
-                      ? 'top'
-                      : 'bottom'
-                    : null
-                }
-              />
-            ))}
-          </div>
+          <LayoutGroup>
+            <div className="space-y-1">
+              {filteredWorktreesWithIndex.map(({ worktree, originalIndex }) => (
+                <WorktreeItem
+                  key={worktree.path}
+                  worktree={worktree}
+                  isActive={activeWorktree?.path === worktree.path}
+                  onClick={() => onSelectWorktree(worktree)}
+                  onDelete={() => setWorktreeToDelete(worktree)}
+                  onMerge={onMergeWorktree ? () => onMergeWorktree(worktree) : undefined}
+                  draggable={!searchQuery && !!onReorderWorktrees}
+                  onDragStart={(e) => handleDragStart(e, originalIndex, worktree)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleDragOver(e, originalIndex)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, originalIndex)}
+                  showDropIndicator={dropTargetIndex === originalIndex}
+                  dropDirection={
+                    dropTargetIndex === originalIndex && draggedIndexRef.current !== null
+                      ? draggedIndexRef.current > originalIndex
+                        ? 'top'
+                        : 'bottom'
+                      : null
+                  }
+                />
+              ))}
+            </div>
+          </LayoutGroup>
         )}
       </div>
 
@@ -597,13 +601,20 @@ function WorktreeItem({
         onClick={onClick}
         onContextMenu={handleContextMenu}
         className={cn(
-          'flex w-full flex-col items-start gap-1 rounded-lg p-3 text-left transition-colors',
+          'relative flex w-full flex-col items-start gap-1 rounded-lg p-3 text-left transition-colors',
           isPrunable && 'opacity-50',
-          isActive ? 'bg-accent/80 text-accent-foreground' : 'hover:bg-accent/50'
+          isActive ? 'text-accent-foreground' : 'hover:bg-accent/50'
         )}
       >
+        {isActive && (
+          <motion.div
+            layoutId="worktree-panel-highlight"
+            className="absolute inset-0 rounded-lg bg-accent"
+            transition={springFast}
+          />
+        )}
         {/* Branch name */}
-        <div className="flex w-full items-center gap-2">
+        <div className="relative z-10 flex w-full items-center gap-2">
           <GitBranch
             className={cn(
               'h-4 w-4 shrink-0',
@@ -631,7 +642,7 @@ function WorktreeItem({
         {/* Path - use rtl direction to show ellipsis at start, keeping end visible */}
         <div
           className={cn(
-            'w-full overflow-hidden whitespace-nowrap text-ellipsis pl-6 text-xs [direction:rtl] [text-align:left] [unicode-bidi:plaintext]',
+            'relative z-10 w-full overflow-hidden whitespace-nowrap text-ellipsis pl-6 text-xs [direction:rtl] [text-align:left] [unicode-bidi:plaintext]',
             isPrunable && 'line-through',
             isActive ? 'text-accent-foreground/70' : 'text-muted-foreground'
           )}
@@ -642,7 +653,7 @@ function WorktreeItem({
 
         {/* Activity counts and diff stats (only shown when has active sessions) */}
         {hasActivity && (
-          <div className="flex items-center gap-3 pl-6 text-xs text-muted-foreground">
+          <div className="relative z-10 flex items-center gap-3 pl-6 text-xs text-muted-foreground">
             {activity.agentCount > 0 && (
               <span className="flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />

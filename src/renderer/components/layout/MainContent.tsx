@@ -292,17 +292,17 @@ export function MainContent({
                   type="button"
                   onClick={() => onTabChange(tab.id)}
                   className={cn(
-                    'relative flex h-8 items-center gap-1.5 rounded-full px-3.5 text-sm transition-all duration-200',
+                    'relative flex h-8 items-center gap-1.5 rounded-md px-3 text-sm transition-colors',
                     isActive
-                      ? 'text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'text-accent-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                   )}
                 >
-                  {/* Glow highlight background */}
+                  {/* Active highlight background */}
                   {isActive && (
                     <motion.div
                       layoutId="main-tab-highlight"
-                      className="absolute inset-0 rounded-full bg-gradient-to-b from-accent/80 to-accent shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.1)]"
+                      className="absolute inset-0 rounded-md bg-accent"
                       transition={springFast}
                     />
                   )}
