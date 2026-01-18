@@ -243,7 +243,14 @@ export function MergeWorktreeDialog({
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={deleteWorktree}
-                  onCheckedChange={(checked) => setDeleteWorktree(checked === true)}
+                  onCheckedChange={(checked) => {
+                    const isChecked = checked === true;
+                    setDeleteWorktree(isChecked);
+                    // Auto-enable deleteBranch when deleteWorktree is checked
+                    if (isChecked) {
+                      setDeleteBranch(true);
+                    }
+                  }}
                 />
                 {t('Delete worktree')}
               </label>

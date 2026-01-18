@@ -111,6 +111,7 @@ export function useWorktreeCreate() {
     },
     onSuccess: (_, { workdir }) => {
       queryClient.invalidateQueries({ queryKey: ['worktree', 'list', workdir] });
+      queryClient.invalidateQueries({ queryKey: ['worktree', 'listMultiple', workdir] });
     },
   });
 }
@@ -130,6 +131,7 @@ export function useWorktreeRemove() {
     },
     onSuccess: (_, { workdir }) => {
       queryClient.invalidateQueries({ queryKey: ['worktree', 'list', workdir] });
+      queryClient.invalidateQueries({ queryKey: ['worktree', 'listMultiple', workdir] });
     },
   });
 }
@@ -150,6 +152,7 @@ export function useWorktreeMerge() {
     },
     onSuccess: (_, { workdir }) => {
       queryClient.invalidateQueries({ queryKey: ['worktree', 'list', workdir] });
+      queryClient.invalidateQueries({ queryKey: ['worktree', 'listMultiple', workdir] });
       queryClient.invalidateQueries({ queryKey: ['worktree', 'mergeState', workdir] });
       queryClient.invalidateQueries({ queryKey: ['git', 'branches', workdir] });
     },
@@ -240,6 +243,7 @@ export function useWorktreeMergeContinue() {
     },
     onSuccess: (_, { workdir }) => {
       queryClient.invalidateQueries({ queryKey: ['worktree', 'list', workdir] });
+      queryClient.invalidateQueries({ queryKey: ['worktree', 'listMultiple', workdir] });
       queryClient.invalidateQueries({ queryKey: ['worktree', 'mergeState', workdir] });
       queryClient.invalidateQueries({ queryKey: ['worktree', 'conflicts', workdir] });
       queryClient.invalidateQueries({ queryKey: ['git', 'branches', workdir] });
