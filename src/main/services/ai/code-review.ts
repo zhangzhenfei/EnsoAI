@@ -85,6 +85,7 @@ ${gitLog || '(No commit history available)'}`;
 // Stream JSON parser for Claude's stream-json output
 class ClaudeStreamParser {
   private buffer = '';
+  private hasReceivedStreamEvents = false;
 
   parse(data: string): string[] {
     this.buffer += data;
@@ -143,10 +144,20 @@ class ClaudeStreamParser {
       try {
         const obj = JSON.parse(jsonStr);
         // Extract text content from various message types
-        if (obj.type === 'assistant' && obj.message?.content) {
-          for (const block of obj.message.content) {
-            if (block.type === 'text' && block.text) {
-              chunks.push(block.text);
+        if (obj.type === 'stream_event' && obj.event?.type === 'content_block_delta') {
+          // Claude stream-json format: {"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"..."}}}
+          const text = obj.event.delta?.text;
+          if (text) {
+            this.hasReceivedStreamEvents = true;
+            chunks.push(text);
+          }
+        } else if (obj.type === 'assistant' && obj.message?.content) {
+          // Skip if we already received stream events (avoid duplicate content)
+          if (!this.hasReceivedStreamEvents) {
+            for (const block of obj.message.content) {
+              if (block.type === 'text' && block.text) {
+                chunks.push(block.text);
+              }
             }
           }
         } else if (obj.type === 'content_block_delta' && obj.delta?.text) {
@@ -289,19 +300,16 @@ export async function startCodeReview(options: CodeReviewOptions): Promise<void>
     const cleaned = stripAnsi(dataStr);
 
     if (provider === 'claude-code') {
-      // Parse Claude's streaming JSON
       const chunks = claudeParser.parse(cleaned);
       for (const chunk of chunks) {
         onChunk(chunk);
       }
     } else if (provider === 'gemini-cli') {
-      // Parse Gemini's NDJSON format
       const chunks = geminiParser.parse(cleaned);
       for (const chunk of chunks) {
         onChunk(chunk);
       }
     }
-    // Codex: collect and parse at end
   });
 
   proc.stderr?.on('data', (data) => {
