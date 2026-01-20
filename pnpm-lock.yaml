@@ -19,7 +19,7 @@ patchedDependencies:
     hash: bc3ccafe927604ba6c5db0d4998828b2e6e9d1681695c9e5393c6f0800e69494
     path: patches/@google__gemini-cli-core@0.22.4.patch
   ai-sdk-provider-codex-cli:
-    hash: 47e1bb7e7ab98342c9cd015c1367ea4ee9439649741e4717788129473d3d601c
+    hash: 6bb8f366dee632147d0f014666900a61ee273a7b16c9d35e7cbd032c589a8e97
     path: patches/ai-sdk-provider-codex-cli.patch
 
 importers:
@@ -82,7 +82,7 @@ importers:
         version: 3.3.2(zod@4.3.5)
       ai-sdk-provider-codex-cli:
         specifier: ^1.0.4
-        version: 1.0.5(patch_hash=47e1bb7e7ab98342c9cd015c1367ea4ee9439649741e4717788129473d3d601c)(zod@4.3.5)
+        version: 1.0.5(patch_hash=6bb8f366dee632147d0f014666900a61ee273a7b16c9d35e7cbd032c589a8e97)(zod@4.3.5)
       ai-sdk-provider-gemini-cli:
         specifier: ^2.0.1
         version: 2.0.1(@modelcontextprotocol/sdk@1.25.2(hono@4.11.4)(zod@3.25.76))(encoding@0.1.13)(hono@4.11.4)(zod@4.3.5)
@@ -6682,7 +6682,7 @@ snapshots:
       '@anthropic-ai/claude-agent-sdk': 0.2.12(zod@4.3.5)
       zod: 4.3.5
 
-  ai-sdk-provider-codex-cli@1.0.5(patch_hash=47e1bb7e7ab98342c9cd015c1367ea4ee9439649741e4717788129473d3d601c)(zod@4.3.5):
+  ai-sdk-provider-codex-cli@1.0.5(patch_hash=6bb8f366dee632147d0f014666900a61ee273a7b16c9d35e7cbd032c589a8e97)(zod@4.3.5):
     dependencies:
       '@ai-sdk/provider': 3.0.4
       '@ai-sdk/provider-utils': 4.0.8(zod@4.3.5)
