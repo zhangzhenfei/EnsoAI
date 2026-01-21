@@ -19,7 +19,7 @@ const WINDOWS_SHELLS: ShellDefinition[] = [
   {
     id: 'powershell7',
     name: 'PowerShell 7',
-    paths: ['C:\\Program Files\\PowerShell\\7\\pwsh.exe'],
+    paths: ['pwsh.exe'],
     args: ['-NoLogo'],
     // -Login loads user profile (for version managers like vfox, nvm-windows, etc.)
     // -ExecutionPolicy Bypass allows running .ps1 scripts (npm global packages use them)
@@ -339,11 +339,8 @@ class ShellDetector {
 
   getDefaultShell(): string {
     if (isWindows) {
-      const pwsh = 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
-      if (existsSync(pwsh)) {
-        return pwsh;
-      }
-      return 'powershell.exe';
+      // Try pwsh.exe (PowerShell 7) from PATH first
+      return 'pwsh.exe';
     }
 
     const shell = process.env.SHELL;
