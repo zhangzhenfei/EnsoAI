@@ -742,6 +742,13 @@ export const zhTranslations: Record<string, string> = {
   'Restore default prompt': '恢复默认提示词',
   'This will restore the default AI prompt for generating branch names. Your custom prompt will be lost.':
     '这将恢复生成分支名称的默认 AI 提示词。您的自定义提示词将丢失。',
+  // Commit Prompt section
+  'Commit Prompt': '提交提示词',
+  'Customize the AI prompt for generating commit messages': '自定义生成提交信息的 AI 提示词',
+  'Enter a prompt template for generating commit messages.\nAvailable variables:\n• {recent_commits} - Recent commit messages\n• {staged_stat} - Staged changes statistics\n• {staged_diff} - Staged changes diff':
+    '输入提示词模板，AI 将根据您的规则生成提交信息。\n可用变量：\n• {recent_commits} - 最近的提交信息\n• {staged_stat} - 暂存区变更统计\n• {staged_diff} - 暂存区变更详情',
+  'This will restore the default AI prompt for generating commit messages. Your custom prompt will be lost.':
+    '这将恢复生成提交信息的默认 AI 提示词。您的自定义提示词将丢失。',
   // Auto Save section
   'Auto Save': '自动保存',
   'Auto save settings': '自动保存设置',

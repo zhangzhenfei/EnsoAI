@@ -107,6 +107,7 @@ const electronAPI = {
         provider: string;
         model: string;
         reasoningEffort?: string;
+        prompt?: string;
       }
     ): Promise<{ success: boolean; message?: string; error?: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.GIT_GENERATE_COMMIT_MSG, workdir, options),

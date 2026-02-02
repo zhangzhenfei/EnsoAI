@@ -279,7 +279,51 @@ export interface CommitMessageGeneratorSettings {
   provider: AIProvider;
   model: string; // Dynamic based on provider
   reasoningEffort?: ReasoningEffort; // For Codex CLI
+  prompt: string; // Custom prompt template
 }
+
+// Default prompts for different languages
+export const defaultCommitPromptZh = `你是一个 Git commit message 生成助手。请根据以下信息生成规范的 commit message。
+
+要求：
+1. 遵循 Conventional Commits 规范
+2. 格式：<type>(<scope>): <description>
+3. type 包括：feat, fix, docs, style, refactor, perf, test, chore, ci, build
+4. scope 可选，表示影响范围
+5. description 使用中文，简洁明了
+6. 如果变更较复杂，可以添加正文说明
+
+参考最近的提交风格：
+{recent_commits}
+
+变更摘要：
+{staged_stat}
+
+变更详情：
+{staged_diff}
+
+请直接输出 commit message，无需解释。`;
+
+export const defaultCommitPromptEn = `You are a Git commit message generator. Generate a commit message based on the following information.
+
+Requirements:
+1. Follow Conventional Commits specification
+2. Format: <type>(<scope>): <description>
+3. Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build
+4. Scope is optional, indicates the affected area
+5. Description should be concise and clear
+6. Add body for complex changes
+
+Reference recent commit style:
+{recent_commits}
+
+Changes summary:
+{staged_stat}
+
+Changes detail:
+{staged_diff}
+
+Output the commit message directly, no explanation needed.`;
 
 export const defaultCommitMessageGeneratorSettings: CommitMessageGeneratorSettings = {
   enabled: true,
@@ -287,6 +331,7 @@ export const defaultCommitMessageGeneratorSettings: CommitMessageGeneratorSettin
   timeout: 120,
   provider: 'claude-code',
   model: 'haiku',
+  prompt: defaultCommitPromptZh,
 };
 
 export interface CodeReviewSettings {
