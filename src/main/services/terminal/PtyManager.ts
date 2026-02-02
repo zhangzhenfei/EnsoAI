@@ -7,6 +7,7 @@ import * as pty from 'node-pty';
 import pidtree from 'pidtree';
 import pidusage from 'pidusage';
 import { killProcessTree } from '../../utils/processUtils';
+import { getClaudeIdeBridge } from '../claude/ClaudeIdeBridge';
 import { getProxyEnvVars } from '../proxy/ProxyConfig';
 import { detectShell, shellDetector } from './ShellDetector';
 
@@ -358,22 +359,28 @@ export class PtyManager {
 
     let ptyProcess: pty.IPty;
 
+    // Build environment with Claude IDE Bridge integration
+    const bridge = getClaudeIdeBridge();
+    const baseEnv = {
+      ...process.env,
+      ...getProxyEnvVars(),
+      ...options.env,
+      TERM: 'xterm-256color',
+      COLORTERM: 'truecolor',
+      // Ensure proper locale for UTF-8 support (GUI apps may not inherit LANG)
+      LANG: process.env.LANG || 'en_US.UTF-8',
+      LC_ALL: process.env.LC_ALL || process.env.LANG || 'en_US.UTF-8',
+    };
+    // Add Claude Code IDE integration env vars if bridge is active
+    const env = bridge ? bridge.setEnvForChild(baseEnv) : baseEnv;
+
     try {
       ptyProcess = pty.spawn(shell, args, {
         name: 'xterm-256color',
         cols: options.cols || 80,
         rows: options.rows || 24,
         cwd,
-        env: {
-          ...process.env,
-          ...getProxyEnvVars(),
-          ...options.env,
-          TERM: 'xterm-256color',
-          COLORTERM: 'truecolor',
-          // Ensure proper locale for UTF-8 support (GUI apps may not inherit LANG)
-          LANG: process.env.LANG || 'en_US.UTF-8',
-          LC_ALL: process.env.LC_ALL || process.env.LANG || 'en_US.UTF-8',
-        } as Record<string, string>,
+        env: env as Record<string, string>,
       });
     } catch (error) {
       if (!isWindows) {
@@ -386,16 +393,7 @@ export class PtyManager {
             cols: options.cols || 80,
             rows: options.rows || 24,
             cwd,
-            env: {
-              ...process.env,
-              ...getProxyEnvVars(),
-              ...options.env,
-              TERM: 'xterm-256color',
-              COLORTERM: 'truecolor',
-              // Ensure proper locale for UTF-8 support (GUI apps may not inherit LANG)
-              LANG: process.env.LANG || 'en_US.UTF-8',
-              LC_ALL: process.env.LC_ALL || process.env.LANG || 'en_US.UTF-8',
-            } as Record<string, string>,
+            env: env as Record<string, string>,
           });
           shell = fallbackShell;
           args = fallbackArgs;
