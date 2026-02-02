@@ -195,6 +195,7 @@ export function useAutoFetchListener() {
       queryClient.invalidateQueries({ queryKey: ['git', 'status'] });
       queryClient.invalidateQueries({ queryKey: ['git', 'branches'] });
       queryClient.invalidateQueries({ queryKey: ['worktree', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['worktree', 'listMultiple'] });
     });
 
     return cleanup;
