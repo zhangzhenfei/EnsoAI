@@ -358,7 +358,12 @@ export async function startClaudeIdeBridge(
   function sendNotification(method: string, params: { filePath: string } & object): void {
     const client = findClientForPath(params.filePath);
     if (client) {
+      console.log(`[ClaudeIdeBridge] Sending ${method} for ${params.filePath}`);
       sendNotificationToClient(client, method, params);
+    } else {
+      console.log(
+        `[ClaudeIdeBridge] No client found for ${params.filePath}, clients: ${clients.size}`
+      );
     }
   }
 
@@ -387,6 +392,9 @@ export async function startClaudeIdeBridge(
     const clientId = String(++clientIdCounter);
     const clientConnection: ClientConnection = { ws, workspace };
     clients.set(clientId, clientConnection);
+    console.log(
+      `[ClaudeIdeBridge] Client ${clientId} connected, workspace: ${workspace}, total: ${clients.size}`
+    );
 
     // Custom message handler that can update workspace from initialize
     ws.on('message', (data) => {
@@ -411,6 +419,9 @@ export async function startClaudeIdeBridge(
     });
 
     ws.on('close', () => {
+      console.log(
+        `[ClaudeIdeBridge] Client ${clientId} disconnected, remaining: ${clients.size - 1}`
+      );
       clients.delete(clientId);
     });
   });
