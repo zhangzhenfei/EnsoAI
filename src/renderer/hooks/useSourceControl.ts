@@ -15,12 +15,12 @@ export function useFileChanges(workdir: string | null, isActive = true) {
       return window.electronAPI.git.getFileChanges(workdir);
     },
     enabled: !!workdir,
-    refetchInterval: (query) => {
+    refetchInterval: (q) => {
       if (!isActive || !shouldPoll) return false;
-      return query.state.data?.truncated ? 60000 : 5000;
-    }, // Only poll when tab is active and user is not idle
-    refetchIntervalInBackground: false, // Only poll when window is focused
-    staleTime: 2000, // Avoid redundant requests within 2s
+      return q.state.data?.truncated ? 60000 : 5000;
+    },
+    refetchIntervalInBackground: false,
+    staleTime: 2000,
   });
 }
 

@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { useRepositoryStore } from '@/stores/repository';
 import { useShouldPoll } from './useWindowFocus';
 
@@ -16,9 +15,9 @@ export function useGitStatus(workdir: string | null, isActive = true) {
       return status;
     },
     enabled: !!workdir,
-    refetchInterval: (query) => {
+    refetchInterval: (q) => {
       if (!isActive || !shouldPoll) return false;
-      return query.state.data?.truncated ? 60000 : 5000;
+      return q.state.data?.truncated ? 60000 : 5000;
     },
     refetchIntervalInBackground: false,
   });
@@ -84,8 +83,14 @@ export function useGitCheckout() {
       await window.electronAPI.git.checkout(workdir, branch);
     },
     onSuccess: (_, { workdir }) => {
+      // Invalidate all git-related queries after branch switch
       queryClient.invalidateQueries({ queryKey: ['git', 'status', workdir] });
       queryClient.invalidateQueries({ queryKey: ['git', 'branches', workdir] });
+      queryClient.invalidateQueries({ queryKey: ['git', 'file-changes', workdir] });
+      queryClient.invalidateQueries({ queryKey: ['git', 'file-diff', workdir] });
+      queryClient.invalidateQueries({ queryKey: ['git', 'log', workdir] });
+      queryClient.invalidateQueries({ queryKey: ['git', 'log-infinite', workdir] });
+      queryClient.invalidateQueries({ queryKey: ['git', 'submodules', workdir] });
     },
   });
 }
