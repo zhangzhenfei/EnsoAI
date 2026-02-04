@@ -1,4 +1,5 @@
 import { joinPath } from '@shared/utils/path';
+import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowDown,
@@ -72,6 +73,7 @@ export function SourceControlPanel({
   sessionId,
 }: SourceControlPanelProps) {
   const { t, tNode } = useI18n();
+  const queryClient = useQueryClient();
 
   // Accordion state - collapsible sections
   const [changesExpanded, setChangesExpanded] = useState(true);
@@ -151,8 +153,11 @@ export function SourceControlPanel({
       refetch();
       refetchCommits();
       refetchStatus();
+      // Also refresh submodules data
+      queryClient.invalidateQueries({ queryKey: ['git', 'submodules', rootPath] });
+      queryClient.invalidateQueries({ queryKey: ['git', 'submodule', 'changes', rootPath] });
     }
-  }, [isActive, rootPath, refetch, refetchCommits, refetchStatus]);
+  }, [isActive, rootPath, refetch, refetchCommits, refetchStatus, queryClient]);
 
   // Sync handler: pull first (if behind), then push (if ahead)
   const handleSync = useCallback(async () => {
