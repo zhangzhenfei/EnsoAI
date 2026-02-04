@@ -31,7 +31,13 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { toastManager } from '@/components/ui/toast';
-import { useGitPull, useGitPush, useGitStatus } from '@/hooks/useGit';
+import {
+  useGitBranches,
+  useGitCheckout,
+  useGitPull,
+  useGitPush,
+  useGitStatus,
+} from '@/hooks/useGit';
 import { useCommitDiff, useCommitFiles, useGitHistoryInfinite } from '@/hooks/useGitHistory';
 import { useFileChanges, useGitFetch } from '@/hooks/useSourceControl';
 import { useSubmoduleFileDiff, useSubmodules } from '@/hooks/useSubmodules';
@@ -39,6 +45,7 @@ import { useI18n } from '@/i18n';
 import { heightVariants, springFast } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { useSourceControlStore } from '@/stores/sourceControl';
+import { BranchSwitcher } from './BranchSwitcher';
 import { ChangesList } from './ChangesList';
 import { CommitBox } from './CommitBox';
 import { CommitDiffViewer } from './CommitDiffViewer';
@@ -109,6 +116,10 @@ export function SourceControlPanel({
   const pullMutation = useGitPull();
   const fetchMutation = useGitFetch();
   const isSyncing = pushMutation.isPending || pullMutation.isPending;
+
+  // Branch switching
+  const { data: branches = [], isLoading: branchesLoading } = useGitBranches(rootPath ?? null);
+  const checkoutMutation = useGitCheckout();
 
   // Submodules
   const { data: submodules = [] } = useSubmodules(rootPath ?? null);
@@ -215,6 +226,35 @@ export function SourceControlPanel({
       // Errors are handled by mutation's onError
     }
   }, [rootPath, gitStatus?.current, pushMutation, refetch, refetchCommits, refetchStatus, t]);
+
+  // Branch checkout handler
+  const handleBranchCheckout = useCallback(
+    async (branch: string) => {
+      if (!rootPath || checkoutMutation.isPending) return;
+
+      try {
+        await checkoutMutation.mutateAsync({ workdir: rootPath, branch });
+        refetch();
+        refetchCommits();
+        refetchStatus();
+
+        toastManager.add({
+          title: t('Branch switched'),
+          description: t('Branch switched to {{branch}}', { branch }),
+          type: 'success',
+          timeout: 3000,
+        });
+      } catch (error) {
+        toastManager.add({
+          title: t('Failed to switch branch'),
+          description: error instanceof Error ? error.message : String(error),
+          type: 'error',
+          timeout: 5000,
+        });
+      }
+    },
+    [rootPath, checkoutMutation, refetch, refetchCommits, refetchStatus, t]
+  );
 
   // Flatten infinite query data
   const commits = commitsData?.pages.flat() ?? [];
@@ -469,8 +509,19 @@ export function SourceControlPanel({
                       )}
                     />
                     <GitBranch className="h-4 w-4" />
-                    <span className="text-sm font-medium">{t('Changes')}</span>
+                    <span className="text-sm font-medium shrink-0">{t('Changes')}</span>
                   </button>
+
+                  {/* Branch Switcher */}
+                  <BranchSwitcher
+                    currentBranch={gitStatus?.current ?? null}
+                    branches={branches}
+                    onCheckout={handleBranchCheckout}
+                    isLoading={branchesLoading}
+                    isCheckingOut={checkoutMutation.isPending}
+                    size="sm"
+                  />
+
                   <button
                     type="button"
                     onClick={() => setSidebarCollapsed(true)}
