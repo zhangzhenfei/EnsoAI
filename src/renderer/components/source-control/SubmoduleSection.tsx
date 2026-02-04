@@ -107,10 +107,11 @@ export function SubmoduleSection({
   );
 
   // Branch switching
-  const { data: branches = [], isLoading: branchesLoading, refetch: refetchBranches } = useSubmoduleBranches(
-    rootPath,
-    submodule.path
-  );
+  const {
+    data: branches = [],
+    isLoading: branchesLoading,
+    refetch: refetchBranches,
+  } = useSubmoduleBranches(rootPath, submodule.path);
   const checkoutMutation = useCheckoutSubmoduleBranch();
 
   // Handle commit click - toggle expansion
@@ -316,6 +317,7 @@ export function SubmoduleSection({
           branch,
         });
         refetch();
+        refetchBranches();
         toastManager.add({
           title: t('Branch switched'),
           description: t('Branch switched to {{branch}}', { branch }),
@@ -331,7 +333,7 @@ export function SubmoduleSection({
         });
       }
     },
-    [rootPath, submodule.path, checkoutMutation, refetch, t]
+    [rootPath, submodule.path, checkoutMutation, refetch, refetchBranches, t]
   );
 
   const handleFileClick = (file: { path: string; staged: boolean }) => {

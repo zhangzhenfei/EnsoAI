@@ -118,7 +118,11 @@ export function SourceControlPanel({
   const isSyncing = pushMutation.isPending || pullMutation.isPending;
 
   // Branch switching
-  const { data: branches = [], isLoading: branchesLoading } = useGitBranches(rootPath ?? null);
+  const {
+    data: branches = [],
+    isLoading: branchesLoading,
+    refetch: refetchBranches,
+  } = useGitBranches(rootPath ?? null);
   const checkoutMutation = useGitCheckout();
 
   // Submodules
@@ -235,6 +239,7 @@ export function SourceControlPanel({
       try {
         await checkoutMutation.mutateAsync({ workdir: rootPath, branch });
         refetch();
+        refetchBranches();
         refetchCommits();
         refetchStatus();
 
@@ -253,7 +258,7 @@ export function SourceControlPanel({
         });
       }
     },
-    [rootPath, checkoutMutation, refetch, refetchCommits, refetchStatus, t]
+    [rootPath, checkoutMutation, refetch, refetchBranches, refetchCommits, refetchStatus, t]
   );
 
   // Flatten infinite query data
