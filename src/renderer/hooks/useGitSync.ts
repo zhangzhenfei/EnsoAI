@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { toastManager } from '@/components/ui/toast';
 import { useI18n } from '@/i18n';
 import { useGitPull, useGitPush, useGitStatus } from './useGit';
@@ -24,22 +24,30 @@ export function useGitSync({ workdir, enabled = true }: UseGitSyncOptions) {
   const tracking = gitStatus?.tracking ?? null;
   const currentBranch = gitStatus?.current ?? null;
 
+  // Performance optimization: Use ref to store frequently changing values.
+  // This avoids unnecessary callback rebuilds while ensuring callbacks always
+  // access the latest values. The ref is updated on every render (line below),
+  // so there's no stale closure issue.
+  // Note: mutateAsync from React Query is a stable reference.
+  const syncStateRef = useRef({ ahead, behind, currentBranch, isSyncing });
+  syncStateRef.current = { ahead, behind, currentBranch, isSyncing };
+
   // Sync handler: pull first (if behind), then push (if ahead)
   const handleSync = useCallback(async () => {
-    // Early return if already syncing (uses React Query's reactive isPending state)
-    if (pullMutation.isPending || pushMutation.isPending) return;
+    const { ahead: aheadVal, behind: behindVal, isSyncing: isSyncingVal } = syncStateRef.current;
+    if (isSyncingVal) return;
 
     try {
       let pulled = false;
       let pushed = false;
 
       // Pull first if behind
-      if (behind > 0) {
+      if (behindVal > 0) {
         await pullMutation.mutateAsync({ workdir });
         pulled = true;
       }
       // Then push if ahead
-      if (ahead > 0) {
+      if (aheadVal > 0) {
         await pushMutation.mutateAsync({ workdir });
         pushed = true;
       }
@@ -63,17 +71,18 @@ export function useGitSync({ workdir, enabled = true }: UseGitSyncOptions) {
         timeout: 5000,
       });
     }
-  }, [behind, ahead, pullMutation, pushMutation, workdir, refetchStatus, t]);
+  }, [pullMutation.mutateAsync, pushMutation.mutateAsync, workdir, refetchStatus, t]);
 
   // Publish branch handler: push with --set-upstream
   const handlePublish = useCallback(async () => {
-    if (!currentBranch || pushMutation.isPending) return;
+    const { currentBranch: branch, isSyncing: isSyncingVal } = syncStateRef.current;
+    if (!branch || isSyncingVal) return;
 
     try {
       await pushMutation.mutateAsync({
         workdir,
         remote: 'origin',
-        branch: currentBranch,
+        branch,
         setUpstream: true,
       });
       refetchStatus();
@@ -81,7 +90,7 @@ export function useGitSync({ workdir, enabled = true }: UseGitSyncOptions) {
       toastManager.add({
         title: t('Branch published'),
         description: t('Branch {{branch}} is now tracking origin/{{branch}}', {
-          branch: currentBranch,
+          branch,
         }),
         type: 'success',
         timeout: 3000,
@@ -95,7 +104,7 @@ export function useGitSync({ workdir, enabled = true }: UseGitSyncOptions) {
         timeout: 5000,
       });
     }
-  }, [currentBranch, pushMutation, workdir, refetchStatus, t]);
+  }, [pushMutation.mutateAsync, workdir, refetchStatus, t]);
 
   return {
     gitStatus,
