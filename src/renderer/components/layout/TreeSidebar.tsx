@@ -33,7 +33,12 @@ import {
   type TabId,
   TEMP_REPO_ID,
 } from '@/App/constants';
-import { getRepositorySettings } from '@/App/storage';
+import {
+  DEFAULT_REPOSITORY_SETTINGS,
+  getStoredRepositorySettings,
+  normalizePath,
+  type RepositorySettings,
+} from '@/App/storage';
 import { GitSyncButton } from '@/components/git/GitSyncButton';
 import {
   CreateGroupDialog,
@@ -218,6 +223,17 @@ export function TreeSidebar({
 
   // Repository manager dialog
   const [repoManagerOpen, setRepoManagerOpen] = useState(false);
+
+  // Cached repository settings to avoid repeated localStorage reads
+  const [repoSettingsMap, setRepoSettingsMap] = useState<Record<string, RepositorySettings>>(
+    getStoredRepositorySettings
+  );
+  const refreshRepoSettings = useCallback(() => {
+    setRepoSettingsMap(getStoredRepositorySettings());
+  }, []);
+  useEffect(() => {
+    refreshRepoSettings();
+  }, [refreshRepoSettings]);
 
   // Create worktree dialog (triggered from context menu)
   const [createWorktreeDialogOpen, setCreateWorktreeDialogOpen] = useState(false);
@@ -481,8 +497,11 @@ export function TreeSidebar({
   const filteredRepos = useMemo(() => {
     let filtered = repositories;
 
-    // Filter hidden repositories
-    filtered = filtered.filter((repo) => !getRepositorySettings(repo.path).hidden);
+    // Filter hidden repositories using cached settings
+    filtered = filtered.filter((repo) => {
+      const settings = repoSettingsMap[normalizePath(repo.path)] || DEFAULT_REPOSITORY_SETTINGS;
+      return !settings.hidden;
+    });
 
     if (activeGroupId !== ALL_GROUP_ID) {
       filtered = filtered.filter((r) => r.groupId === activeGroupId);
@@ -500,7 +519,7 @@ export function TreeSidebar({
     }
 
     return filtered;
-  }, [repositories, worktreesMap, searchQuery, activeGroupId]);
+  }, [repositories, worktreesMap, searchQuery, activeGroupId, repoSettingsMap]);
 
   // Filter worktrees for a specific repo
   const getFilteredWorktrees = useCallback(
@@ -1227,6 +1246,7 @@ export function TreeSidebar({
         repositories={repositories}
         onSelectRepo={onSelectRepo}
         onRemoveRepository={onRemoveRepository}
+        onSettingsChange={refreshRepoSettings}
       />
 
       <CreateGroupDialog
@@ -1351,7 +1371,6 @@ interface WorktreeTreeItemProps {
 
 function WorktreeTreeItem({
   worktree,
-  repoPath,
   isActive,
   onClick,
   onDelete,

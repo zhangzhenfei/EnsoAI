@@ -34,6 +34,7 @@ interface RepositoryManagerDialogProps {
   repositories: Repository[];
   onSelectRepo?: (repoPath: string) => void;
   onRemoveRepository?: (repoPath: string) => void;
+  onSettingsChange?: () => void;
 }
 
 export function RepositoryManagerDialog({
@@ -42,6 +43,7 @@ export function RepositoryManagerDialog({
   repositories,
   onSelectRepo,
   onRemoveRepository,
+  onSettingsChange,
 }: RepositoryManagerDialogProps) {
   const { t, tNode } = useI18n();
   const [settingsMap, setSettingsMap] = useState<Record<string, RepositorySettings>>({});
@@ -58,14 +60,16 @@ export function RepositoryManagerDialog({
     }
   }, [open, repositories]);
 
-  const toggleVisibility = useCallback((repoPath: string) => {
-    setSettingsMap((prev) => {
-      const current = prev[repoPath] || DEFAULT_REPOSITORY_SETTINGS;
+  const toggleVisibility = useCallback(
+    (repoPath: string) => {
+      const current = settingsMap[repoPath] || DEFAULT_REPOSITORY_SETTINGS;
       const updated = { ...current, hidden: !current.hidden };
       saveRepositorySettings(repoPath, updated);
-      return { ...prev, [repoPath]: updated };
-    });
-  }, []);
+      setSettingsMap((prev) => ({ ...prev, [repoPath]: updated }));
+      onSettingsChange?.();
+    },
+    [settingsMap, onSettingsChange]
+  );
 
   const handleRepoClick = useCallback(
     (repoPath: string) => {
