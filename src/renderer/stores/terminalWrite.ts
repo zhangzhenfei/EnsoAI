@@ -17,8 +17,8 @@ interface TerminalWriteStore {
 }
 
 /**
- * 终端写入 store，提供跨组件访问终端写入和聚焦功能
- * 用于 DiffReviewModal 等组件向特定 session 的终端发送消息
+ * Terminal write store providing cross-component access to terminal write and focus functions.
+ * Used by DiffReviewModal and other components to send messages to specific session terminals.
  */
 export const useTerminalWriteStore = create<TerminalWriteStore>((set, get) => ({
   writers: new Map(),

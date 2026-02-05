@@ -498,7 +498,7 @@ function WorktreeItem({
 
   // Git sync operations
   const { ahead, behind, tracking, currentBranch, isSyncing, handleSync, handlePublish } =
-    useGitSync({ workdir: worktree.path, enabled: true });
+    useGitSync({ workdir: worktree.path, enabled: isActive });
 
   // Check if branch is merged to main
   const isMerged = useMemo(() => {
