@@ -33,10 +33,12 @@ import {
   useGitUnstage,
 } from '@/hooks/useSourceControl';
 import {
+  useStageSubmodule,
   useSubmoduleBranches,
   useSubmoduleChanges,
   useSubmoduleFileDiff,
   useSubmodules,
+  useUnstageSubmodule,
 } from '@/hooks/useSubmodules';
 import { useI18n } from '@/i18n';
 import { heightVariants, springFast } from '@/lib/motion';
@@ -472,6 +474,10 @@ export function SourceControlPanel({
   const discardMutation = useGitDiscard();
   const commitMutation = useGitCommit();
 
+  // Submodule mutations
+  const stageSubmoduleMutation = useStageSubmodule();
+  const unstageSubmoduleMutation = useUnstageSubmodule();
+
   // Confirmation dialog state
   const [confirmAction, setConfirmAction] = useState<{
     type: 'discard' | 'delete';
@@ -482,20 +488,34 @@ export function SourceControlPanel({
   // Git action handlers
   const handleStage = useCallback(
     (paths: string[]) => {
-      if (selectedRepoPath) {
-        stageMutation.mutate({ workdir: selectedRepoPath, paths });
+      if (!rootPath) return;
+      if (selectedSubmodulePath) {
+        stageSubmoduleMutation.mutate({
+          workdir: rootPath,
+          submodulePath: selectedSubmodulePath,
+          paths,
+        });
+      } else {
+        stageMutation.mutate({ workdir: rootPath, paths });
       }
     },
-    [selectedRepoPath, stageMutation]
+    [rootPath, selectedSubmodulePath, stageMutation, stageSubmoduleMutation]
   );
 
   const handleUnstage = useCallback(
     (paths: string[]) => {
-      if (selectedRepoPath) {
-        unstageMutation.mutate({ workdir: selectedRepoPath, paths });
+      if (!rootPath) return;
+      if (selectedSubmodulePath) {
+        unstageSubmoduleMutation.mutate({
+          workdir: rootPath,
+          submodulePath: selectedSubmodulePath,
+          paths,
+        });
+      } else {
+        unstageMutation.mutate({ workdir: rootPath, paths });
       }
     },
-    [selectedRepoPath, unstageMutation]
+    [rootPath, selectedSubmodulePath, unstageMutation, unstageSubmoduleMutation]
   );
 
   const handleDiscard = useCallback((paths: string[]) => {
