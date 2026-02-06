@@ -149,7 +149,11 @@ export function AgentTerminal({
     }
   }, [isActive, terminalSessionId, markSessionActive]);
 
-  // Register session worktree mapping for activity state tracking
+  // Register session worktree mapping for activity state tracking.
+  // The cleanup function uses the closure value of terminalSessionId (not a ref) because:
+  // 1. React guarantees cleanup runs with the values from the effect that created it
+  // 2. This ensures we unregister the exact sessionId that was registered
+  // 3. Using a ref would risk unregistering a different sessionId if it changed between registration and cleanup
   useEffect(() => {
     if (terminalSessionId && cwd) {
       registerSessionWorktree(terminalSessionId, cwd);

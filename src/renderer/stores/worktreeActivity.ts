@@ -287,25 +287,17 @@ export function unregisterSessionWorktree(sessionId: string): void {
 }
 
 /**
- * Get worktree path for a session
- */
-export function getSessionWorktree(sessionId: string): string | undefined {
-  return sessionWorktreeMap.get(sessionId);
-}
-
-/**
  * Initialize agent activity state listener
  * Listens for agent stop and ask user question notifications
  * Call this once on app startup
  */
 export function initAgentActivityListener(): () => void {
-  const { setActivityState } = useWorktreeActivityStore.getState();
-
   // Listen for agent stop notification -> set 'completed'
   const unsubStop = window.electronAPI.notification.onAgentStop((data: { sessionId: string }) => {
     const worktreePath = sessionWorktreeMap.get(data.sessionId);
     if (worktreePath) {
-      setActivityState(worktreePath, 'completed');
+      // Get store method inside callback to ensure fresh reference after HMR
+      useWorktreeActivityStore.getState().setActivityState(worktreePath, 'completed');
     }
   });
 
@@ -314,7 +306,8 @@ export function initAgentActivityListener(): () => void {
     (data: { sessionId: string }) => {
       const worktreePath = sessionWorktreeMap.get(data.sessionId);
       if (worktreePath) {
-        setActivityState(worktreePath, 'waiting_input');
+        // Get store method inside callback to ensure fresh reference after HMR
+        useWorktreeActivityStore.getState().setActivityState(worktreePath, 'waiting_input');
       }
     }
   );
