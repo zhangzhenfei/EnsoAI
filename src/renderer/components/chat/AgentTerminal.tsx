@@ -11,6 +11,11 @@ import { useI18n } from '@/i18n';
 import { type OutputState, useAgentSessionsStore } from '@/stores/agentSessions';
 import { useSettingsStore } from '@/stores/settings';
 import { useTerminalWriteStore } from '@/stores/terminalWrite';
+import {
+  registerSessionWorktree,
+  unregisterSessionWorktree,
+  useWorktreeActivityStore,
+} from '@/stores/worktreeActivity';
 
 interface AgentTerminalProps {
   id?: string; // Terminal session ID (UI key)
@@ -144,6 +149,17 @@ export function AgentTerminal({
     }
   }, [isActive, terminalSessionId, markSessionActive]);
 
+  // Register session worktree mapping for activity state tracking
+  const setActivityState = useWorktreeActivityStore((s) => s.setActivityState);
+  useEffect(() => {
+    if (terminalSessionId && cwd) {
+      registerSessionWorktree(terminalSessionId, cwd);
+      return () => {
+        unregisterSessionWorktree(terminalSessionId);
+      };
+    }
+  }, [terminalSessionId, cwd]);
+
   // Start polling for process activity
   const startActivityPolling = useCallback(() => {
     // Clear any existing interval
@@ -173,6 +189,10 @@ export function AgentTerminal({
           // If we have enough output, show the indicator
           if (outputSinceEnterRef.current > MIN_OUTPUT_FOR_INDICATOR) {
             updateOutputState('outputting');
+            // Also update worktree activity state to 'running'
+            if (cwd) {
+              setActivityState(cwd, 'running');
+            }
           }
         } else {
           // Process is idle AND no recent output
@@ -192,7 +212,7 @@ export function AgentTerminal({
         // Error checking activity, ignore
       }
     }, ACTIVITY_POLL_INTERVAL_MS);
-  }, [updateOutputState]);
+  }, [updateOutputState, cwd, setActivityState]);
 
   // Stop polling for process activity
   const stopActivityPolling = useCallback(() => {
@@ -380,6 +400,10 @@ export function AgentTerminal({
         // Update to 'outputting' once we have substantial output after Enter
         if (outputSinceEnterRef.current > MIN_OUTPUT_FOR_INDICATOR) {
           updateOutputState('outputting');
+          // Also update worktree activity state to 'running'
+          if (cwd) {
+            setActivityState(cwd, 'running');
+          }
         }
         // Note: The transition to 'idle' is handled by process activity polling
         // (startActivityPolling), not by a simple timeout
@@ -434,6 +458,7 @@ export function AgentTerminal({
       terminalSessionId,
       t,
       updateOutputState,
+      setActivityState,
     ]
   );
 
@@ -477,6 +502,11 @@ export function AgentTerminal({
         }
         // Reset output counter.
         dataSinceEnterRef.current = 0;
+
+        // Set activity state to 'running' immediately when user presses Enter
+        if (cwd) {
+          setActivityState(cwd, 'running');
+        }
 
         if (terminalSessionId && glowEffectEnabled) {
           isMonitoringOutputRef.current = true;
@@ -532,6 +562,8 @@ export function AgentTerminal({
       startActivityPolling,
       terminalSessionId,
       glowEffectEnabled,
+      cwd,
+      setActivityState,
     ]
   );
 

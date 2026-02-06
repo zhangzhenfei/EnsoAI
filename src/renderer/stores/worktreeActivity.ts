@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
+// Agent activity state for tree sidebar display
+export type AgentActivityState = 'idle' | 'running' | 'waiting_input' | 'completed';
+
 interface WorktreeActivity {
   agentCount: number;
   terminalCount: number;
@@ -16,6 +19,7 @@ type CloseHandler = (worktreePath: string) => void;
 interface WorktreeActivityState {
   activities: Record<string, WorktreeActivity>;
   diffStats: Record<string, DiffStats>;
+  activityStates: Record<string, AgentActivityState>; // Agent activity states per worktree
 
   // Agent session tracking
   incrementAgent: (worktreePath: string) => void;
@@ -30,6 +34,11 @@ interface WorktreeActivityState {
   // Diff stats tracking
   setDiffStats: (worktreePath: string, stats: DiffStats) => void;
   fetchDiffStats: (worktreePaths: string[]) => Promise<void>;
+
+  // Activity state tracking
+  setActivityState: (worktreePath: string, state: AgentActivityState) => void;
+  getActivityState: (worktreePath: string) => AgentActivityState;
+  clearActivityState: (worktreePath: string) => void;
 
   // Query helpers
   hasActivity: (worktreePath: string) => boolean;
@@ -55,6 +64,7 @@ export const useWorktreeActivityStore = create<WorktreeActivityState>()(
   subscribeWithSelector((set, get) => ({
     activities: {},
     diffStats: {},
+    activityStates: {},
 
     incrementAgent: (worktreePath) =>
       set((state) => {
@@ -165,10 +175,27 @@ export const useWorktreeActivityStore = create<WorktreeActivityState>()(
       return get().diffStats[worktreePath] || defaultDiffStats;
     },
 
+    // Activity state methods
+    setActivityState: (worktreePath, state) =>
+      set((prev) => ({
+        activityStates: { ...prev.activityStates, [worktreePath]: state },
+      })),
+
+    getActivityState: (worktreePath) => {
+      return get().activityStates[worktreePath] || 'idle';
+    },
+
+    clearActivityState: (worktreePath) =>
+      set((prev) => {
+        const { [worktreePath]: _, ...rest } = prev.activityStates;
+        return { activityStates: rest };
+      }),
+
     clearWorktree: (worktreePath) =>
       set((state) => {
-        const { [worktreePath]: _, ...rest } = state.activities;
-        return { activities: rest };
+        const { [worktreePath]: _, ...restActivities } = state.activities;
+        const { [worktreePath]: __, ...restActivityStates } = state.activityStates;
+        return { activities: restActivities, activityStates: restActivityStates };
       }),
 
     // Close handler registry
@@ -228,3 +255,59 @@ useWorktreeActivityStore.subscribe(
     },
   }
 );
+
+// Session to worktree path mapping for activity state updates
+const sessionWorktreeMap = new Map<string, string>();
+
+/**
+ * Register a session's worktree path for activity state tracking
+ */
+export function registerSessionWorktree(sessionId: string, worktreePath: string): void {
+  sessionWorktreeMap.set(sessionId, worktreePath);
+}
+
+/**
+ * Unregister a session from activity state tracking
+ */
+export function unregisterSessionWorktree(sessionId: string): void {
+  sessionWorktreeMap.delete(sessionId);
+}
+
+/**
+ * Get worktree path for a session
+ */
+export function getSessionWorktree(sessionId: string): string | undefined {
+  return sessionWorktreeMap.get(sessionId);
+}
+
+/**
+ * Initialize agent activity state listener
+ * Listens for agent stop and ask user question notifications
+ * Call this once on app startup
+ */
+export function initAgentActivityListener(): () => void {
+  const { setActivityState } = useWorktreeActivityStore.getState();
+
+  // Listen for agent stop notification -> set 'completed'
+  const unsubStop = window.electronAPI.notification.onAgentStop((data: { sessionId: string }) => {
+    const worktreePath = sessionWorktreeMap.get(data.sessionId);
+    if (worktreePath) {
+      setActivityState(worktreePath, 'completed');
+    }
+  });
+
+  // Listen for ask user question notification -> set 'waiting_input'
+  const unsubAsk = window.electronAPI.notification.onAskUserQuestion(
+    (data: { sessionId: string }) => {
+      const worktreePath = sessionWorktreeMap.get(data.sessionId);
+      if (worktreePath) {
+        setActivityState(worktreePath, 'waiting_input');
+      }
+    }
+  );
+
+  return () => {
+    unsubStop();
+    unsubAsk();
+  };
+}
