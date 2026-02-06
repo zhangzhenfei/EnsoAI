@@ -150,7 +150,6 @@ export function AgentTerminal({
   }, [isActive, terminalSessionId, markSessionActive]);
 
   // Register session worktree mapping for activity state tracking
-  const setActivityState = useWorktreeActivityStore((s) => s.setActivityState);
   useEffect(() => {
     if (terminalSessionId && cwd) {
       registerSessionWorktree(terminalSessionId, cwd);
@@ -159,6 +158,9 @@ export function AgentTerminal({
       };
     }
   }, [terminalSessionId, cwd]);
+
+  // Activity state setter - used by startActivityPolling and handleData/handleCustomKey
+  const setActivityState = useWorktreeActivityStore((s) => s.setActivityState);
 
   // Start polling for process activity
   const startActivityPolling = useCallback(() => {

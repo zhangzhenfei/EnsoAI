@@ -193,6 +193,8 @@ export const useWorktreeActivityStore = create<WorktreeActivityState>()(
 
     clearWorktree: (worktreePath) =>
       set((state) => {
+        // Clean up sessionWorktreeMap entries for this worktree
+        cleanupSessionWorktreeMap(worktreePath);
         const { [worktreePath]: _, ...restActivities } = state.activities;
         const { [worktreePath]: __, ...restActivityStates } = state.activityStates;
         return { activities: restActivities, activityStates: restActivityStates };
@@ -258,6 +260,17 @@ useWorktreeActivityStore.subscribe(
 
 // Session to worktree path mapping for activity state updates
 const sessionWorktreeMap = new Map<string, string>();
+
+/**
+ * Clean up sessionWorktreeMap entries for a specific worktree path
+ */
+function cleanupSessionWorktreeMap(worktreePath: string): void {
+  for (const [sessionId, path] of sessionWorktreeMap.entries()) {
+    if (path === worktreePath) {
+      sessionWorktreeMap.delete(sessionId);
+    }
+  }
+}
 
 /**
  * Register a session's worktree path for activity state tracking
