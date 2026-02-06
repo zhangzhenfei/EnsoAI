@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Clock,
   Copy,
+  EyeOff,
   FolderGit2,
   FolderMinus,
   FolderOpen,
@@ -35,9 +36,11 @@ import {
 } from '@/App/constants';
 import {
   DEFAULT_REPOSITORY_SETTINGS,
+  getRepositorySettings,
   getStoredRepositorySettings,
   normalizePath,
   type RepositorySettings,
+  saveRepositorySettings,
 } from '@/App/storage';
 import { GitSyncButton } from '@/components/git/GitSyncButton';
 import {
@@ -1074,6 +1077,31 @@ export function TreeSidebar({
             >
               <Settings2 className="h-4 w-4" />
               {t('Repository Settings')}
+            </button>
+
+            {/* Hide Repository */}
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+              onClick={() => {
+                setRepoMenuOpen(false);
+                if (repoMenuTarget) {
+                  const currentSettings = getRepositorySettings(repoMenuTarget.path);
+                  saveRepositorySettings(repoMenuTarget.path, {
+                    ...currentSettings,
+                    hidden: true,
+                  });
+                  toastManager.add({
+                    title: t('Repository hidden'),
+                    description: t('Hidden repositories will not appear in the sidebar'),
+                    type: 'success',
+                    timeout: 3000,
+                  });
+                }
+              }}
+            >
+              <EyeOff className="h-4 w-4" />
+              {t('Hide Repository')}
             </button>
 
             {!hideGroups && onMoveToGroup && groups.length > 0 && (
