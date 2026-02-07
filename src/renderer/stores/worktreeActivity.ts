@@ -195,8 +195,7 @@ export const useWorktreeActivityStore = create<WorktreeActivityState>()(
 
     clearWorktree: (worktreePath) =>
       set((state) => {
-        // Clean up sessionWorktreeMap entries for this worktree
-        cleanupSessionWorktreeMap(worktreePath);
+        // Clean up session mappings - agentSessions handles session cleanup
         const { [worktreePath]: _, ...restActivities } = state.activities;
         const { [worktreePath]: __, ...restActivityStates } = state.activityStates;
         return { activities: restActivities, activityStates: restActivityStates };
@@ -261,31 +260,44 @@ useWorktreeActivityStore.subscribe(
 );
 
 // Session to worktree path mapping for activity state updates
-const sessionWorktreeMap = new Map<string, string>();
+// Uses the same storage as agentSessions ('enso-agent-sessions') to avoid duplication
+const SESSIONS_STORAGE_KEY = 'enso-agent-sessions';
 
 /**
- * Clean up sessionWorktreeMap entries for a specific worktree path
+ * Find worktree path (cwd) for a given session ID from persisted agentSessions
  */
-function cleanupSessionWorktreeMap(worktreePath: string): void {
-  for (const [sessionId, path] of sessionWorktreeMap.entries()) {
-    if (path === worktreePath) {
-      sessionWorktreeMap.delete(sessionId);
+function findWorktreePath(sessionId: string): string | undefined {
+  try {
+    const saved = localStorage.getItem(SESSIONS_STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.sessions?.length > 0) {
+        const session = data.sessions.find((s: { id: string; cwd?: string }) => s.id === sessionId);
+        return session?.cwd;
+      }
     }
+  } catch {
+    // Ignore errors
   }
+  return undefined;
 }
 
 /**
  * Register a session's worktree path for activity state tracking
+ * Note: The mapping is persisted via agentSessions store, no action needed here
  */
 export function registerSessionWorktree(sessionId: string, worktreePath: string): void {
-  sessionWorktreeMap.set(sessionId, worktreePath);
+  // Mapping is automatically persisted by agentSessions.ts
+  // No additional storage needed
 }
 
 /**
  * Unregister a session from activity state tracking
+ * Note: The mapping is automatically cleaned up by agentSessions store
  */
 export function unregisterSessionWorktree(sessionId: string): void {
-  sessionWorktreeMap.delete(sessionId);
+  // Mapping is automatically cleaned up by agentSessions store
+  // No additional cleanup needed
 }
 
 /**
@@ -296,7 +308,7 @@ export function unregisterSessionWorktree(sessionId: string): void {
 export function initAgentActivityListener(): () => void {
   // Listen for agent stop notification -> set 'completed'
   const unsubStop = window.electronAPI.notification.onAgentStop((data: { sessionId: string }) => {
-    const worktreePath = sessionWorktreeMap.get(data.sessionId);
+    const worktreePath = findWorktreePath(data.sessionId);
     if (worktreePath) {
       // Get store method inside callback to ensure fresh reference after HMR
       useWorktreeActivityStore.getState().setActivityState(worktreePath, 'completed');
@@ -306,7 +318,7 @@ export function initAgentActivityListener(): () => void {
   // Listen for ask user question notification -> set 'waiting_input'
   const unsubAsk = window.electronAPI.notification.onAskUserQuestion(
     (data: { sessionId: string }) => {
-      const worktreePath = sessionWorktreeMap.get(data.sessionId);
+      const worktreePath = findWorktreePath(data.sessionId);
       if (worktreePath) {
         // Get store method inside callback to ensure fresh reference after HMR
         useWorktreeActivityStore.getState().setActivityState(worktreePath, 'waiting_input');
