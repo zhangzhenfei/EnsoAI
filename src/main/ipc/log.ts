@@ -2,24 +2,14 @@ import path from 'node:path';
 import { IPC_CHANNELS } from '@shared/types';
 import { app, ipcMain, shell } from 'electron';
 import log, { initLogger } from '../utils/logger';
-import { readSettings } from './settings';
 
 export function registerLogHandlers(): void {
-  // Update logging enabled state
+  // Update logging configuration (enabled state and/or level)
   ipcMain.handle(
-    IPC_CHANNELS.LOG_SET_ENABLED,
-    async (_, enabled: boolean, level: 'error' | 'warn' | 'info' | 'debug') => {
-      initLogger(enabled, level);
-      log.info(`Logging ${enabled ? 'enabled' : 'disabled'}`);
-    }
-  );
-
-  // Update log level
-  ipcMain.handle(
-    IPC_CHANNELS.LOG_SET_LEVEL,
-    async (_, level: 'error' | 'warn' | 'info' | 'debug', enabled: boolean) => {
-      initLogger(enabled, level);
-      log.info(`Log level changed to: ${level}`);
+    IPC_CHANNELS.LOG_UPDATE_CONFIG,
+    async (_, config: { enabled: boolean; level: 'error' | 'warn' | 'info' | 'debug' }) => {
+      initLogger(config.enabled, config.level);
+      log.info(`Logging config updated: enabled=${config.enabled}, level=${config.level}`);
     }
   );
 

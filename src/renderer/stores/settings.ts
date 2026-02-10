@@ -1208,12 +1208,20 @@ export const useSettingsStore = create<SettingsState>()(
       setLoggingEnabled: (loggingEnabled) => {
         const { logLevel } = get();
         set({ loggingEnabled });
-        window.electronAPI.log.setLoggingEnabled(loggingEnabled, logLevel);
+        // Update both main process and renderer IPC transport level
+        window.electronAPI.log.updateConfig({ enabled: loggingEnabled, level: logLevel });
+        import('../index').then(({ updateRendererLogging }) => {
+          updateRendererLogging(loggingEnabled, logLevel);
+        });
       },
       setLogLevel: (logLevel) => {
         const { loggingEnabled } = get();
         set({ logLevel });
-        window.electronAPI.log.setLogLevel(logLevel, loggingEnabled);
+        // Update both main process and renderer IPC transport level
+        window.electronAPI.log.updateConfig({ enabled: loggingEnabled, level: logLevel });
+        import('../index').then(({ updateRendererLogging }) => {
+          updateRendererLogging(loggingEnabled, logLevel);
+        });
       },
     }),
     {
@@ -1491,6 +1499,11 @@ export const useSettingsStore = create<SettingsState>()(
       onRehydrateStorage: () => (state) => {
         const effectiveState = state ?? useSettingsStore.getState();
         applyInitialSettings(effectiveState);
+
+        // Sync renderer logging configuration after settings are loaded
+        import('../index').then(({ updateRendererLogging }) => {
+          updateRendererLogging(effectiveState.loggingEnabled, effectiveState.logLevel);
+        });
 
         // 监听系统主题变化，当用户选择"跟随系统"时自动切换
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');

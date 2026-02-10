@@ -6,13 +6,23 @@ import App from './App';
 import { ToastProvider } from './components/ui/toast';
 import './styles/globals.css';
 
-// Hijack console methods to use electron-log in renderer process
-// NOTE: This hijacking is unconditional and happens at module load time.
-// Renderer logs are forwarded to main process via IPC, where the main process's
-// transport level settings (file/console) control whether logs are actually written.
-// When logging is disabled in settings, main process sets file level to 'error',
-// effectively filtering out info/warn/debug logs from renderer.
+// Initialize renderer logging with conservative defaults
+// Starts with 'error' level to minimize IPC overhead until settings are loaded
+log.transports.ipc.level = 'error';
 Object.assign(console, log.functions);
+
+/**
+ * Update renderer logging configuration
+ * Called by settings store after rehydration to sync with user preferences
+ */
+export function updateRendererLogging(
+  enabled: boolean,
+  level: 'error' | 'warn' | 'info' | 'debug'
+) {
+  // Control IPC transport level to reduce unnecessary IPC messages
+  // When disabled, only send errors; when enabled, use configured level
+  log.transports.ipc.level = enabled ? level : 'error';
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {

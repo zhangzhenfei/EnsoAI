@@ -239,8 +239,7 @@ export const IPC_CHANNELS = {
   CLOUDFLARED_STATUS_CHANGED: 'cloudflared:statusChanged',
 
   // Logging
-  LOG_SET_ENABLED: 'log:set-enabled',
-  LOG_SET_LEVEL: 'log:set-level',
+  LOG_UPDATE_CONFIG: 'log:update-config',
   LOG_OPEN_FOLDER: 'log:open-folder',
   LOG_GET_PATH: 'log:get-path',
 } as const;
