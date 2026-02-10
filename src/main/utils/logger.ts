@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { app } from 'electron';
 import log from 'electron-log/main.js';
@@ -7,13 +8,13 @@ import log from 'electron-log/main.js';
 let initialized = false;
 
 /**
- * Clean up old log files
+ * Clean up old log files (async, non-blocking)
  * Removes log files older than the specified number of days
  */
-function cleanupOldLogs(daysToKeep: number = 30): void {
+async function cleanupOldLogs(daysToKeep: number = 30): Promise<void> {
   try {
     const logDir = app.getPath('logs');
-    const files = fs.readdirSync(logDir);
+    const files = await fsp.readdir(logDir);
     const now = Date.now();
     const maxAge = daysToKeep * 24 * 60 * 60 * 1000; // Convert days to milliseconds
 
@@ -21,18 +22,18 @@ function cleanupOldLogs(daysToKeep: number = 30): void {
       // Only process ensoai log files (including .old.log from size rotation)
       if (file.startsWith('ensoai-') && file.endsWith('.log')) {
         const filePath = path.join(logDir, file);
-        const stats = fs.statSync(filePath);
+        const stats = await fsp.stat(filePath);
         const age = now - stats.mtime.getTime();
 
         if (age > maxAge) {
-          fs.unlinkSync(filePath);
-          console.log(`Cleaned up old log file: ${file}`);
+          await fsp.unlink(filePath);
+          log.info(`Cleaned up old log file: ${file}`);
         }
       }
     }
   } catch (error) {
     // Silently fail - don't break app if log cleanup fails
-    console.error('Failed to clean up old logs:', error);
+    log.error('Failed to clean up old logs:', error);
   }
 }
 
@@ -70,8 +71,9 @@ export function initLogger(
     log.initialize({ preload: true });
     Object.assign(console, log.functions);
 
-    // Clean up old log files (use configured retention days or default to 7)
-    cleanupOldLogs(retentionDays ?? 7);
+    // Clean up old log files asynchronously (non-blocking)
+    // Use void to explicitly ignore the promise (fire-and-forget)
+    void cleanupOldLogs(retentionDays ?? 7);
 
     initialized = true;
   }

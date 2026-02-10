@@ -25,11 +25,6 @@ export function registerLogHandlers(): void {
 
   // Get log file path (current day's log file)
   ipcMain.handle(IPC_CHANNELS.LOG_GET_PATH, async () => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const fileName = `ensoai-${year}-${month}-${day}.log`;
-    return path.join(app.getPath('logs'), fileName);
+    return log.transports.file.getFile()?.path ?? '';
   });
 }
