@@ -40,10 +40,12 @@ function cleanupOldLogs(daysToKeep: number = 30): void {
  * Initialize logger with configuration
  * @param enabled - Whether logging is enabled (defaults to false, only errors logged)
  * @param level - Log level to use when enabled
+ * @param retentionDays - Number of days to keep log files (optional, only used on first init)
  */
 export function initLogger(
   enabled: boolean = false,
-  level: 'error' | 'warn' | 'info' | 'debug' = 'info'
+  level: 'error' | 'warn' | 'info' | 'debug' = 'info',
+  retentionDays?: number
 ): void {
   // One-time initialization: setup log file path, format, and hijack console
   if (!initialized) {
@@ -68,8 +70,8 @@ export function initLogger(
     log.initialize({ preload: true });
     Object.assign(console, log.functions);
 
-    // Clean up old log files (keep last 30 days)
-    cleanupOldLogs(30);
+    // Clean up old log files (use configured retention days or default to 7)
+    cleanupOldLogs(retentionDays ?? 7);
 
     initialized = true;
   }

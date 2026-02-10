@@ -621,6 +621,7 @@ interface SettingsState {
   // Logging
   loggingEnabled: boolean;
   logLevel: 'error' | 'warn' | 'info' | 'debug';
+  logRetentionDays: number; // How many days to keep log files (1-30)
 
   setTheme: (theme: Theme) => void;
   setLayoutMode: (mode: LayoutMode) => void;
@@ -727,6 +728,7 @@ interface SettingsState {
   // Logging
   setLoggingEnabled: (enabled: boolean) => void;
   setLogLevel: (level: 'error' | 'warn' | 'info' | 'debug') => void;
+  setLogRetentionDays: (days: number) => void;
 }
 
 const defaultAgentSettings: AgentSettings = {
@@ -829,6 +831,7 @@ export const useSettingsStore = create<SettingsState>()(
       // Logging defaults
       loggingEnabled: false,
       logLevel: 'info',
+      logRetentionDays: 7, // Keep logs for 7 days by default
 
       setTheme: (theme) => {
         const terminalTheme = get().terminalTheme;
@@ -1219,6 +1222,11 @@ export const useSettingsStore = create<SettingsState>()(
         // Update both main process and renderer IPC transport level
         window.electronAPI.log.updateConfig({ enabled: loggingEnabled, level: logLevel });
         updateRendererLogging(loggingEnabled, logLevel);
+      },
+      setLogRetentionDays: (logRetentionDays) => {
+        // Clamp value between 1 and 30 days
+        const clampedDays = Math.min(30, Math.max(1, Math.floor(logRetentionDays)));
+        set({ logRetentionDays: clampedDays });
       },
     }),
     {

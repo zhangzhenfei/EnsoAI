@@ -217,11 +217,18 @@ async function init(): Promise<void> {
   // Initialize logger from settings
   const settings = readSettings();
   const ensoSettings = settings?.['enso-settings'] as
-    | { state?: { loggingEnabled?: boolean; logLevel?: string } }
+    | {
+        state?: {
+          loggingEnabled?: boolean;
+          logLevel?: string;
+          logRetentionDays?: number;
+        };
+      }
     | undefined;
   const loggingEnabled = (ensoSettings?.state?.loggingEnabled as boolean) ?? false;
   const logLevel = (ensoSettings?.state?.logLevel as 'error' | 'warn' | 'info' | 'debug') ?? 'info';
-  initLogger(loggingEnabled, logLevel);
+  const logRetentionDays = (ensoSettings?.state?.logRetentionDays as number) ?? 7;
+  initLogger(loggingEnabled, logLevel, logRetentionDays);
   log.info('EnsoAI started');
 
   // Check Git installation

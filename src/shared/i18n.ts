@@ -1238,6 +1238,11 @@ export const zhTranslations: Record<string, string> = {
   'Detailed diagnostic information': '详细诊断信息',
   'Log Files': '日志文件',
   'Open Log Folder': '打开日志文件夹',
+  'Log Retention': '日志保留',
+  '7 days': '7 天',
+  '14 days': '14 天',
+  '30 days': '30 天',
+  'Old log files will be automatically deleted': '旧日志文件将被自动删除',
 };
 
 export function normalizeLocale(input?: string): Locale {

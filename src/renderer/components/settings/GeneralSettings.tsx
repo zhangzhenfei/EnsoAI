@@ -105,6 +105,8 @@ export function GeneralSettings() {
     setLoggingEnabled,
     logLevel,
     setLogLevel,
+    logRetentionDays,
+    setLogRetentionDays,
   } = useSettingsStore();
   const { t, locale } = useI18n();
 
@@ -797,7 +799,12 @@ export function GeneralSettings() {
           disabled={!loggingEnabled}
         >
           <SelectTrigger className="w-64">
-            <SelectValue>{t(logLevel.charAt(0).toUpperCase() + logLevel.slice(1))}</SelectValue>
+            <SelectValue>
+              {logLevel === 'error' && t('Error')}
+              {logLevel === 'warn' && t('Warning')}
+              {logLevel === 'info' && t('Info')}
+              {logLevel === 'debug' && t('Debug')}
+            </SelectValue>
           </SelectTrigger>
           <SelectPopup>
             <SelectItem value="error">
@@ -823,6 +830,29 @@ export function GeneralSettings() {
           <FileText className="mr-2 h-4 w-4" />
           {t('Open Log Folder')}
         </Button>
+      </div>
+
+      {/* Log Retention Days */}
+      <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+        <span className="text-sm font-medium">{t('Log Retention')}</span>
+        <div className="flex items-center gap-2">
+          <Select
+            value={String(logRetentionDays)}
+            onValueChange={(v) => setLogRetentionDays(Number(v))}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectPopup>
+              <SelectItem value="7">{t('7 days')}</SelectItem>
+              <SelectItem value="14">{t('14 days')}</SelectItem>
+              <SelectItem value="30">{t('30 days')}</SelectItem>
+            </SelectPopup>
+          </Select>
+          <span className="text-xs text-muted-foreground">
+            {t('Old log files will be automatically deleted')}
+          </span>
+        </div>
       </div>
 
       {/* Updates Section */}
