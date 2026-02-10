@@ -1206,12 +1206,14 @@ export const useSettingsStore = create<SettingsState>()(
       setCopyOnSelection: (copyOnSelection) => set({ copyOnSelection }),
       // Logging
       setLoggingEnabled: (loggingEnabled) => {
+        const { logLevel } = get();
         set({ loggingEnabled });
-        window.electronAPI.log.setLoggingEnabled(loggingEnabled);
+        window.electronAPI.log.setLoggingEnabled(loggingEnabled, logLevel);
       },
       setLogLevel: (logLevel) => {
+        const { loggingEnabled } = get();
         set({ logLevel });
-        window.electronAPI.log.setLogLevel(logLevel);
+        window.electronAPI.log.setLogLevel(logLevel, loggingEnabled);
       },
     }),
     {

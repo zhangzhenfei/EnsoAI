@@ -2,6 +2,9 @@ import path from 'node:path';
 import { app } from 'electron';
 import log from 'electron-log/main.js';
 
+// Guard to ensure initialization happens only once
+let initialized = false;
+
 /**
  * Initialize logger with configuration
  * @param enabled - Whether logging is enabled (defaults to false, only errors logged)
@@ -11,11 +14,27 @@ export function initLogger(
   enabled: boolean = false,
   level: 'error' | 'warn' | 'info' | 'debug' = 'info'
 ): void {
-  // Set log file path
-  const logPath = path.join(app.getPath('logs'), 'ensoai.log');
-  log.transports.file.resolvePathFn = () => logPath;
+  // One-time initialization: setup log file path, format, and hijack console
+  if (!initialized) {
+    // Set log file path
+    const logPath = path.join(app.getPath('logs'), 'ensoai.log');
+    log.transports.file.resolvePathFn = () => logPath;
 
-  // Configure log levels based on settings
+    // Configure log file rotation
+    log.transports.file.maxSize = 10 * 1024 * 1024; // 10MB
+
+    // Configure log format
+    log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
+    log.transports.console.format = '[{h}:{i}:{s}.{ms}] [{level}] {text}';
+
+    // Initialize and hijack console methods - all console.log/warn/error become log
+    log.initialize({ preload: true });
+    Object.assign(console, log.functions);
+
+    initialized = true;
+  }
+
+  // Configure log levels based on settings (can be called multiple times)
   if (enabled) {
     log.transports.file.level = level;
     log.transports.console.level = level;
@@ -24,17 +43,6 @@ export function initLogger(
     log.transports.file.level = 'error';
     log.transports.console.level = 'error';
   }
-
-  // Configure log file rotation
-  log.transports.file.maxSize = 10 * 1024 * 1024; // 10MB
-
-  // Configure log format
-  log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
-  log.transports.console.format = '[{h}:{i}:{s}.{ms}] [{level}] {text}';
-
-  // Initialize and hijack console methods - all console.log/warn/error become log
-  log.initialize({ preload: true });
-  Object.assign(console, log.functions);
 }
 
 export default log;

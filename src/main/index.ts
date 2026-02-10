@@ -216,8 +216,11 @@ async function initAutoUpdater(window: BrowserWindow): Promise<void> {
 async function init(): Promise<void> {
   // Initialize logger from settings
   const settings = readSettings();
-  const loggingEnabled = (settings?.loggingEnabled as boolean) ?? false;
-  const logLevel = (settings?.logLevel as 'error' | 'warn' | 'info' | 'debug') ?? 'info';
+  const ensoSettings = settings?.['enso-settings'] as
+    | { state?: { loggingEnabled?: boolean; logLevel?: string } }
+    | undefined;
+  const loggingEnabled = (ensoSettings?.state?.loggingEnabled as boolean) ?? false;
+  const logLevel = (ensoSettings?.state?.logLevel as 'error' | 'warn' | 'info' | 'debug') ?? 'info';
   initLogger(loggingEnabled, logLevel);
   log.info('EnsoAI started');
 

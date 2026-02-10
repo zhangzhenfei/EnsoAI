@@ -906,10 +906,12 @@ const electronAPI = {
 
   // Logging
   log: {
-    setLoggingEnabled: (enabled: boolean): Promise<void> =>
-      ipcRenderer.invoke(IPC_CHANNELS.LOG_SET_ENABLED, enabled),
-    setLogLevel: (level: 'error' | 'warn' | 'info' | 'debug'): Promise<void> =>
-      ipcRenderer.invoke(IPC_CHANNELS.LOG_SET_LEVEL, level),
+    setLoggingEnabled: (
+      enabled: boolean,
+      level: 'error' | 'warn' | 'info' | 'debug'
+    ): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.LOG_SET_ENABLED, enabled, level),
+    setLogLevel: (level: 'error' | 'warn' | 'info' | 'debug', enabled: boolean): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.LOG_SET_LEVEL, level, enabled),
     openFolder: (): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.LOG_OPEN_FOLDER),
     getPath: (): Promise<string> => ipcRenderer.invoke(IPC_CHANNELS.LOG_GET_PATH),
   },

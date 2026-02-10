@@ -6,20 +6,19 @@ import { readSettings } from './settings';
 
 export function registerLogHandlers(): void {
   // Update logging enabled state
-  ipcMain.handle(IPC_CHANNELS.LOG_SET_ENABLED, async (_, enabled: boolean) => {
-    const settings = readSettings();
-    const logLevel = (settings?.logLevel as 'error' | 'warn' | 'info' | 'debug') ?? 'info';
-    initLogger(enabled, logLevel);
-    log.info(`Logging ${enabled ? 'enabled' : 'disabled'}`);
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.LOG_SET_ENABLED,
+    async (_, enabled: boolean, level: 'error' | 'warn' | 'info' | 'debug') => {
+      initLogger(enabled, level);
+      log.info(`Logging ${enabled ? 'enabled' : 'disabled'}`);
+    }
+  );
 
   // Update log level
   ipcMain.handle(
     IPC_CHANNELS.LOG_SET_LEVEL,
-    async (_, level: 'error' | 'warn' | 'info' | 'debug') => {
-      const settings = readSettings();
-      const loggingEnabled = (settings?.loggingEnabled as boolean) ?? false;
-      initLogger(loggingEnabled, level);
+    async (_, level: 'error' | 'warn' | 'info' | 'debug', enabled: boolean) => {
+      initLogger(enabled, level);
       log.info(`Log level changed to: ${level}`);
     }
   );
