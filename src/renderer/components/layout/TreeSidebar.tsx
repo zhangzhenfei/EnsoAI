@@ -1570,19 +1570,20 @@ function WorktreeTreeItem({
   const activityState = activityStates[worktree.path] || 'idle';
   const closeAgentSessions = useWorktreeActivityStore((s) => s.closeAgentSessions);
   const closeTerminalSessions = useWorktreeActivityStore((s) => s.closeTerminalSessions);
-  const clearActivityState = useWorktreeActivityStore((s) => s.clearActivityState);
   const hasActivity = activity.agentCount > 0 || activity.terminalCount > 0;
   const hasDiffStats = diffStats.insertions > 0 || diffStats.deletions > 0;
 
   // Auto-clear completed state after 5 seconds when worktree is active
+  const COMPLETED_STATE_DURATION_MS = 5000;
   useEffect(() => {
     if (isActive && activityState === 'completed') {
       const timer = setTimeout(() => {
-        clearActivityState(worktree.path);
-      }, 5000);
+        // Use getState() to avoid stale closure and dependency array issues
+        useWorktreeActivityStore.getState().clearActivityState(worktree.path);
+      }, COMPLETED_STATE_DURATION_MS);
       return () => clearTimeout(timer);
     }
-  }, [isActive, activityState, worktree.path, clearActivityState]);
+  }, [isActive, activityState, worktree.path]);
 
   // Check if any session in this worktree has outputting or unread state
   const outputState = useWorktreeOutputState(worktree.path);
