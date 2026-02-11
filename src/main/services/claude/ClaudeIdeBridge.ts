@@ -259,22 +259,6 @@ export async function startClaudeIdeBridge(
             );
           }
 
-          // Tools that don't require user approval (auto-approved)
-          // These tools run automatically without user intervention
-          const _autoApprovedTools = [
-            'Task', // Subagents
-            'Read', // File reading
-            'Glob', // File pattern matching
-            'Grep', // Content search
-            'TodoWrite', // Todo list management
-            'TaskUpdate', // Task updates
-            'TaskList', // Task listing
-            'TaskOutput', // Getting task output
-            'Write', // File writing
-            'Edit', // File editing
-            'Bash', // Shell commands (when auto-approved)
-          ];
-
           if (sessionId) {
             // Handle different hook types
             if (data.hook_event_name === 'UserPromptSubmit' && data.cwd) {

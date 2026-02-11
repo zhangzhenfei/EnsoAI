@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { useAgentSessionsStore } from './agentSessions';
 
 // Agent activity state for tree sidebar display
 export type AgentActivityState = 'idle' | 'running' | 'waiting_input' | 'completed';
@@ -178,8 +179,35 @@ export const useWorktreeActivityStore = create<WorktreeActivityState>()(
     // Activity state methods
     setActivityState: (worktreePath, state) =>
       set((prev) => {
+        const currentState = prev.activityStates[worktreePath] || 'idle';
+
         // Skip update if state hasn't changed to avoid unnecessary re-renders
-        if (prev.activityStates[worktreePath] === state) return prev;
+        if (currentState === state) return prev;
+
+        // Define state transition priority (higher number = higher priority)
+        const STATE_PRIORITY: Record<AgentActivityState, number> = {
+          idle: 0,
+          running: 1,
+          waiting_input: 2,
+          completed: 3,
+        };
+
+        // Allow state transitions based on priority rules:
+        // 1. Always allow transition to higher priority state
+        // 2. Allow transition from completed back to running (new task starts)
+        // 3. Block downgrade transitions (except completed → running)
+        const canTransition =
+          STATE_PRIORITY[state] > STATE_PRIORITY[currentState] ||
+          (currentState === 'completed' && state === 'running');
+
+        if (!canTransition) {
+          const pathShort = worktreePath.split('/').slice(-2).join('/');
+          console.log(
+            `[WorktreeActivity] ${pathShort}: blocked ${currentState} → ${state} (priority)`
+          );
+          return prev;
+        }
+
         const pathShort = worktreePath.split('/').slice(-2).join('/');
         console.log(`[WorktreeActivity] ${pathShort} → ${state}`);
         return { activityStates: { ...prev.activityStates, [worktreePath]: state } };
@@ -270,42 +298,81 @@ export function initAgentActivityListener(): () => void {
   // Listen for user prompt submit notification -> set 'running'
   const unsubPreToolUse = window.electronAPI.notification.onPreToolUse(
     (data: { sessionId: string; toolName: string; cwd?: string }) => {
-      if (!data.cwd) {
-        console.warn(
-          `[WorktreeActivity] UserPromptSubmit hook missing cwd: session ${data.sessionId.slice(0, 8)}`
-        );
-        return;
+      // Try to get cwd from data, or fallback to finding it from session
+      let cwd = data.cwd;
+      if (!cwd) {
+        // Fallback: find session by sessionId to get cwd
+        const session = useAgentSessionsStore
+          .getState()
+          .sessions.find((s) => s.sessionId === data.sessionId || s.id === data.sessionId);
+        if (session?.cwd) {
+          cwd = session.cwd;
+          console.log(
+            `[WorktreeActivity] PreToolUse hook found cwd from session: ${cwd.split('/').slice(-2).join('/')}`
+          );
+        } else {
+          console.warn(
+            `[WorktreeActivity] UserPromptSubmit hook missing cwd: session ${data.sessionId.slice(0, 8)}`
+          );
+          return;
+        }
       }
 
-      useWorktreeActivityStore.getState().setActivityState(data.cwd, 'running');
+      useWorktreeActivityStore.getState().setActivityState(cwd, 'running');
     }
   );
 
   // Listen for agent stop notification -> set 'completed'
   const unsubStop = window.electronAPI.notification.onAgentStop(
     (data: { sessionId: string; cwd?: string }) => {
-      if (!data.cwd) {
-        console.warn(
-          `[WorktreeActivity] Stop hook missing cwd: session ${data.sessionId.slice(0, 8)}`
-        );
-        return;
+      // Try to get cwd from data, or fallback to finding it from session
+      let cwd = data.cwd;
+      if (!cwd) {
+        // Fallback: find session by sessionId to get cwd
+        const session = useAgentSessionsStore
+          .getState()
+          .sessions.find((s) => s.sessionId === data.sessionId || s.id === data.sessionId);
+        if (session?.cwd) {
+          cwd = session.cwd;
+          console.log(
+            `[WorktreeActivity] Stop hook found cwd from session: ${cwd.split('/').slice(-2).join('/')}`
+          );
+        } else {
+          console.warn(
+            `[WorktreeActivity] Stop hook missing cwd: session ${data.sessionId.slice(0, 8)}`
+          );
+          return;
+        }
       }
 
-      useWorktreeActivityStore.getState().setActivityState(data.cwd, 'completed');
+      useWorktreeActivityStore.getState().setActivityState(cwd, 'completed');
     }
   );
 
   // Listen for ask user question notification -> set 'waiting_input'
   const unsubAsk = window.electronAPI.notification.onAskUserQuestion(
     (data: { sessionId: string; cwd?: string }) => {
-      if (!data.cwd) {
-        console.warn(
-          `[WorktreeActivity] AskUserQuestion hook missing cwd: session ${data.sessionId.slice(0, 8)}`
-        );
-        return;
+      // Try to get cwd from data, or fallback to finding it from session
+      let cwd = data.cwd;
+      if (!cwd) {
+        // Fallback: find session by sessionId to get cwd
+        const session = useAgentSessionsStore
+          .getState()
+          .sessions.find((s) => s.sessionId === data.sessionId || s.id === data.sessionId);
+        if (session?.cwd) {
+          cwd = session.cwd;
+          console.log(
+            `[WorktreeActivity] AskUserQuestion hook found cwd from session: ${cwd.split('/').slice(-2).join('/')}`
+          );
+        } else {
+          console.warn(
+            `[WorktreeActivity] AskUserQuestion hook missing cwd: session ${data.sessionId.slice(0, 8)}`
+          );
+          return;
+        }
       }
 
-      useWorktreeActivityStore.getState().setActivityState(data.cwd, 'waiting_input');
+      useWorktreeActivityStore.getState().setActivityState(cwd, 'waiting_input');
     }
   );
 
