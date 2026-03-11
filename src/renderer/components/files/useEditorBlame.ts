@@ -12,9 +12,10 @@ const MS_PER_MONTH = 2592000000; // 30 days
 const MS_PER_YEAR = 31536000000; // 365 days
 const CURSOR_DEBOUNCE_MS = 150;
 const CACHE_INVALIDATE_DELAY_MS = 1000;
-const MAX_CACHE_SIZE = 20;
+const MAX_CACHE_SIZE = 20; // FIFO cache limit - sufficient for typical workflows (not true LRU, but simple and effective)
 
 // Global style element ID (shared across all editor instances)
+// Managed by reference counting to avoid duplicate elements and ensure proper cleanup
 const GLOBAL_BLAME_STYLE_ID = 'git-blame-inline-styles-global';
 let globalStyleElementRefCount = 0;
 
@@ -283,6 +284,7 @@ export function useEditorBlame({
         globalStyleElementRefCount = 0;
       }
     };
+    // Note: `t` from useI18n is a stable reference (useCallback), safe to include in dependencies
   }, [editor, monacoInstance, filePath, rootPath, enabled, t]);
 
   // Return stable object with refresh function
