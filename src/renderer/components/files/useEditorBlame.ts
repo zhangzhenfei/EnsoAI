@@ -12,6 +12,7 @@ const MS_PER_MONTH = 2592000000; // 30 days
 const MS_PER_YEAR = 31536000000; // 365 days
 const CURSOR_DEBOUNCE_MS = 150;
 const CONTENT_CHANGE_DEBOUNCE_MS = 1000; // Debounce for re-fetching blame after edit
+const MAX_CACHE_SIZE = 20; // Maximum number of files to cache blame data for
 
 // Global style element ID (shared across all editor instances)
 const GLOBAL_BLAME_STYLE_ID = 'git-blame-inline-styles-global';
@@ -192,6 +193,15 @@ export function useEditorBlame({
         for (const entry of blameData) {
           lineMap.set(entry.lineNumber, entry);
         }
+
+        // Implement LRU cache with size limit
+        if (stateRef.current.cache.size >= MAX_CACHE_SIZE) {
+          // Remove the oldest entry (first key in Map)
+          const firstKey = stateRef.current.cache.keys().next().value;
+          if (firstKey) {
+            stateRef.current.cache.delete(firstKey);
+          }
+        }
         stateRef.current.cache.set(filePath, lineMap);
 
         if (!disposed) {
@@ -257,6 +267,9 @@ export function useEditorBlame({
         stateRef.current.contentChangeTimer = null;
       }
       clearDeco();
+
+      // Clear cache for this file to free memory
+      stateRef.current.cache.delete(filePath);
 
       // Cleanup global style element reference
       globalStyleElementRefCount--;
