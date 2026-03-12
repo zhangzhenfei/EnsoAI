@@ -142,7 +142,7 @@ export function DiffViewer({
   const isDirty = editedContent !== null;
 
   // Hide unchanged regions state
-  const [hideUnchangedRegions, setHideUnchangedRegions] = useState(false);
+  const [hideUnchangedRegions, setHideUnchangedRegions] = useState(true);
 
   // Can edit: not commit view (history is readonly)
   const canEdit = !isCommitView;

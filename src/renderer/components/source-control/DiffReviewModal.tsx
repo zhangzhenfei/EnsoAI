@@ -299,7 +299,7 @@ export function DiffReviewModal({ open, onOpenChange, rootPath, onSend }: DiffRe
   const [editorReady, setEditorReady] = useState(false);
   const [expandedSubmodules, setExpandedSubmodules] = useState<Set<string>>(new Set());
   const [isMaximized, setIsMaximized] = useState(true);
-  const [hideUnchangedRegions, setHideUnchangedRegions] = useState(false);
+  const [hideUnchangedRegions, setHideUnchangedRegions] = useState(true);
 
   // Editor refs
   const editorRef = useRef<DiffEditorInstance | null>(null);
