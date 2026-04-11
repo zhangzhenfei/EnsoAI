@@ -162,9 +162,10 @@ const electronAPI = {
         provider: string;
         model: string;
         reasoningEffort?: string;
-        bare?: boolean;
-        claudeEffort?: string;
         prompt?: string;
+        bareEnabled?: boolean;
+        effortEnabled?: boolean;
+        effortLevel?: string;
       }
     ): Promise<{ success: boolean; message?: string; error?: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.GIT_GENERATE_COMMIT_MSG, workdir, options),
@@ -175,8 +176,9 @@ const electronAPI = {
         provider: string;
         model: string;
         reasoningEffort?: string;
-        bare?: boolean;
-        claudeEffort?: string;
+        bareEnabled?: boolean;
+        effortEnabled?: boolean;
+        effortLevel?: string;
       }
     ): Promise<{ success: boolean; branchName?: string; error?: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.GIT_GENERATE_BRANCH_NAME, workdir, options),
@@ -186,8 +188,9 @@ const electronAPI = {
         provider: string;
         model: string;
         reasoningEffort?: string;
-        bare?: boolean;
-        claudeEffort?: string;
+        bareEnabled?: boolean;
+        effortEnabled?: boolean;
+        effortLevel?: string;
         reviewId: string;
         language?: string;
         sessionId?: string; // Restore this parameter for "Continue Conversation"

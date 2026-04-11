@@ -318,9 +318,11 @@ export function registerGitHandlers(): void {
         provider: string;
         model: string;
         reasoningEffort?: string;
-        bare?: boolean;
-        claudeEffort?: string;
         prompt?: string;
+        // AI Performance settings from renderer
+        bareEnabled?: boolean;
+        effortEnabled?: boolean;
+        effortLevel?: string;
       }
     ): Promise<{ success: boolean; message?: string; error?: string }> => {
       if (isRemoteWorkdir(workdir)) {
@@ -334,8 +336,10 @@ export function registerGitHandlers(): void {
         provider: (options.provider ?? 'claude-code') as AIProvider,
         model: options.model as ModelId,
         reasoningEffort: options.reasoningEffort as ReasoningEffort | undefined,
-        bare: options.bare,
-        claudeEffort: options.claudeEffort as ClaudeEffort | undefined,
+        bare: options.bareEnabled,
+        claudeEffort: options.effortEnabled
+          ? ((options.effortLevel as ClaudeEffort) ?? 'low')
+          : undefined,
         prompt: options.prompt,
       });
     }
@@ -351,12 +355,14 @@ export function registerGitHandlers(): void {
         provider: string;
         model: string;
         reasoningEffort?: string;
-        bare?: boolean;
-        claudeEffort?: string;
         language?: string;
         reviewId: string;
         sessionId?: string; // Support sessionId for "Continue Conversation"
         prompt?: string; // Custom prompt template
+        // AI Performance settings from renderer
+        bareEnabled?: boolean;
+        effortEnabled?: boolean;
+        effortLevel?: string;
       }
     ): Promise<{ success: boolean; error?: string; sessionId?: string }> => {
       if (isRemoteWorkdir(workdir)) {
@@ -370,8 +376,10 @@ export function registerGitHandlers(): void {
         provider: (options.provider ?? 'claude-code') as AIProvider,
         model: options.model as ModelId,
         reasoningEffort: options.reasoningEffort as ReasoningEffort | undefined,
-        bare: options.bare,
-        claudeEffort: options.claudeEffort as ClaudeEffort | undefined,
+        bare: options.bareEnabled,
+        claudeEffort: options.effortEnabled
+          ? ((options.effortLevel as ClaudeEffort) ?? 'low')
+          : undefined,
         language: options.language ?? '中文',
         reviewId: options.reviewId,
         sessionId: options.sessionId, // Pass sessionId for session preservation
@@ -466,8 +474,10 @@ export function registerGitHandlers(): void {
         provider: string;
         model: string;
         reasoningEffort?: string;
-        bare?: boolean;
-        claudeEffort?: string;
+        // AI Performance settings from renderer
+        bareEnabled?: boolean;
+        effortEnabled?: boolean;
+        effortLevel?: string;
       }
     ): Promise<{ success: boolean; branchName?: string; error?: string }> => {
       if (isRemoteWorkdir(workdir)) {
@@ -480,8 +490,10 @@ export function registerGitHandlers(): void {
         provider: (options.provider ?? 'claude-code') as AIProvider,
         model: options.model as ModelId,
         reasoningEffort: options.reasoningEffort as ReasoningEffort | undefined,
-        bare: options.bare,
-        claudeEffort: options.claudeEffort as ClaudeEffort | undefined,
+        bare: options.bareEnabled,
+        claudeEffort: options.effortEnabled
+          ? ((options.effortLevel as ClaudeEffort) ?? 'low')
+          : undefined,
       });
     }
   );

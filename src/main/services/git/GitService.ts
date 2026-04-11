@@ -209,11 +209,9 @@ export class GitService {
     };
 
     return new Promise((resolve, reject) => {
-      // Use 'normal' mode for status - only need to know if there are untracked files,
-      // not the full list. This significantly improves performance for large repos.
       const proc = spawnGit(
         this.workdir,
-        ['status', '--porcelain=v2', '--branch', '-z', '--untracked-files=normal'],
+        ['status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all'],
         { cwd: this.workdir, env: this.getGitEnv() }
       );
 
@@ -579,11 +577,9 @@ export class GitService {
     };
 
     await new Promise<void>((resolve, reject) => {
-      // Use 'normal' mode to avoid recursively listing all files in untracked directories.
-      // The UI (ChangesTree) already handles folder paths ending with '/' correctly.
       const proc = spawnGit(
         this.workdir,
-        ['status', '--porcelain=v2', '--branch', '-z', '--untracked-files=normal'],
+        ['status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all'],
         { cwd: this.workdir, env }
       );
 
@@ -732,16 +728,19 @@ export class GitService {
   }
 
   async getCommitFiles(hash: string, submodulePath?: string): Promise<CommitFileChange[]> {
+    // Trim hash to remove any whitespace/newlines that may be passed from IPC layer
+    const trimmedHash = hash.trim();
     const git = this.getGitInstance(submodulePath);
+
     // Use cat-file to reliably detect merge commits (check parent count)
-    const commitInfo = await git.catFile(['-p', hash]);
+    const commitInfo = await git.catFile(['-p', trimmedHash]);
     const isMergeCommit = (commitInfo.match(/^parent /gm) ?? []).length >= 2;
 
     const files: CommitFileChange[] = [];
 
     if (isMergeCommit) {
       // Merge commit: use git diff to compare with first parent
-      const mergeDiff = await git.diff([`${hash}^1`, hash, '--name-status']);
+      const mergeDiff = await git.diff([`${trimmedHash}^1`, trimmedHash, '--name-status']);
       const diffLines = mergeDiff.split('\n').filter((line) => line.trim());
 
       for (const line of diffLines) {
@@ -760,7 +759,7 @@ export class GitService {
       }
     } else {
       // Regular commit: use show --name-status
-      const commitShow = await git.show([hash, '--name-status', '--pretty=format:%P']);
+      const commitShow = await git.show([trimmedHash, '--name-status', '--pretty=format:%P']);
       const lines = commitShow.split('\n').filter((line) => line.trim());
 
       for (const line of lines) {

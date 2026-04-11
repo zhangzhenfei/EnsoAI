@@ -67,7 +67,7 @@ export function CreateWorktreeDialog({
   onOpenChange: controlledOnOpenChange,
 }: CreateWorktreeDialogProps) {
   const { t } = useI18n();
-  const { defaultWorktreePath, branchNameGenerator } = useSettingsStore();
+  const { defaultWorktreePath, branchNameGenerator, aiPerformance } = useSettingsStore();
 
   // Internal state (for uncontrolled mode)
   const [internalOpen, setInternalOpen] = React.useState(false);
@@ -340,8 +340,9 @@ export function CreateWorktreeDialog({
         provider: branchNameGenerator.provider,
         model: branchNameGenerator.model,
         reasoningEffort: branchNameGenerator.reasoningEffort,
-        bare: branchNameGenerator.bare,
-        claudeEffort: branchNameGenerator.claudeEffort,
+        bareEnabled: aiPerformance.bareEnabled,
+        effortEnabled: aiPerformance.effortEnabled,
+        effortLevel: aiPerformance.effortLevel,
       });
 
       if (result.success && result.branchName) {

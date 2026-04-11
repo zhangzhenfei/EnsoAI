@@ -11,6 +11,7 @@ import {
 import { updateRendererLogging } from '@/utils/logging';
 import {
   defaultAgentSettings,
+  defaultAiPerformanceSettings,
   defaultBranchNameGeneratorSettings,
   defaultClaudeCodeIntegrationSettings,
   defaultCodeReviewSettings,
@@ -147,6 +148,9 @@ function getInitialState() {
     codeReview: defaultCodeReviewSettings,
     branchNameGenerator: defaultBranchNameGeneratorSettings,
     todoPolish: defaultTodoPolishSettings,
+
+    // AI Performance Optimization
+    aiPerformance: defaultAiPerformanceSettings,
 
     // App Settings
     autoUpdateEnabled: true,
@@ -468,6 +472,12 @@ export const useSettingsStore = create<SettingsState>()(
       setTodoPolish: (settings) =>
         set((state) => ({
           todoPolish: { ...state.todoPolish, ...settings },
+        })),
+
+      // AI Performance Setter
+      setAiPerformance: (settings) =>
+        set((state) => ({
+          aiPerformance: { ...state.aiPerformance, ...settings },
         })),
 
       // App Setters

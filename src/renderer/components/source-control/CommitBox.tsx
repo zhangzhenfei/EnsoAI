@@ -22,7 +22,7 @@ export function CommitBox({
   const { t } = useI18n();
   const [message, setMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const { commitMessageGenerator } = useSettingsStore();
+  const { commitMessageGenerator, aiPerformance } = useSettingsStore();
   const bgImageEnabled = useSettingsStore((s) => s.backgroundImageEnabled);
 
   const handleCommit = () => {
@@ -51,9 +51,10 @@ export function CommitBox({
         provider: commitMessageGenerator.provider,
         model: commitMessageGenerator.model,
         reasoningEffort: commitMessageGenerator.reasoningEffort,
-        bare: commitMessageGenerator.bare,
-        claudeEffort: commitMessageGenerator.claudeEffort,
         prompt: commitMessageGenerator.prompt,
+        bareEnabled: aiPerformance.bareEnabled,
+        effortEnabled: aiPerformance.effortEnabled,
+        effortLevel: aiPerformance.effortLevel,
       });
 
       if (result.success && result.message) {

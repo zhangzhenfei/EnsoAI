@@ -808,8 +808,10 @@ async function gitShowFile(workdir, spec) {
   }
 }
 
+// Use --untracked-files=all to list all untracked files including nested ones
+// This is intentional per PR #405 performance improvement
 async function gitStatus(rootPath) {
-  const { stdout } = await execCommand('git', ['status', '--porcelain=v2', '--branch', '-z', '--untracked-files=normal'], { cwd: rootPath });
+  const { stdout } = await execCommand('git', ['status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all'], { cwd: rootPath });
   return parsePorcelainStatus(stdout);
 }
 
@@ -901,8 +903,10 @@ async function gitFetch(rootPath, remote = 'origin') {
   return { success: true };
 }
 
+// Use --untracked-files=all to list all untracked files including nested ones
+// This is intentional per PR #405 performance improvement
 async function gitFileChanges(rootPath) {
-  const { stdout } = await execCommand('git', ['status', '--porcelain=v2', '--branch', '-z', '--untracked-files=normal'], { cwd: rootPath });
+  const { stdout } = await execCommand('git', ['status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all'], { cwd: rootPath });
   return parseFileChanges(stdout);
 }
 
@@ -945,9 +949,35 @@ async function gitCommitShow(rootPath, hash) {
 }
 
 async function gitCommitFiles(rootPath, hash) {
-  const { stdout } = await execCommand('git', ['show', '--name-status', '--format=', hash], {
+  // Trim hash to handle potential whitespace from IPC layer
+  hash = hash.trim();
+
+  // Use cat-file to reliably detect merge commits (check parent count)
+  const { stdout: commitInfo } = await execCommand('git', ['cat-file', '-p', hash], {
     cwd: rootPath,
   });
+  const isMergeCommit = (commitInfo.match(/^parent /gm) ?? []).length >= 2;
+
+  let stdout: string;
+  if (isMergeCommit) {
+    // Merge commit: use git diff to compare with first parent
+    const parentHash = commitInfo.match(/^parent ([a-f0-9]+)/m)?.[1];
+    if (parentHash) {
+      const diffResult = await execCommand('git', ['diff', parentHash, hash, '--name-status'], {
+        cwd: rootPath,
+      });
+      stdout = diffResult.stdout;
+    } else {
+      stdout = '';
+    }
+  } else {
+    // Regular commit: use git show --name-status
+    const result = await execCommand('git', ['show', '--name-status', '--format=', hash], {
+      cwd: rootPath,
+    });
+    stdout = result.stdout;
+  }
+
   return parseCommitFiles(stdout);
 }
 
