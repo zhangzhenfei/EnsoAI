@@ -509,6 +509,11 @@ const electronAPI = {
       ipcRenderer.on(IPC_CHANNELS.APP_OPEN_PATH, handler);
       return () => ipcRenderer.off(IPC_CHANNELS.APP_OPEN_PATH, handler);
     },
+    onFocusSession: (callback: (params: { sessionId: string }) => void): (() => void) => {
+      const handler = (_: unknown, params: { sessionId: string }) => callback(params);
+      ipcRenderer.on(IPC_CHANNELS.APP_FOCUS_SESSION, handler);
+      return () => ipcRenderer.off(IPC_CHANNELS.APP_FOCUS_SESSION, handler);
+    },
     setLanguage: (language: Locale): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.APP_SET_LANGUAGE, language),
     setProxy: (settings: ProxySettings): Promise<void> =>
